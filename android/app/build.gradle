@@ -1,0 +1,34 @@
+plugins {
+    id "com.android.application"
+}
+
+def webAssetsDir = layout.buildDirectory.dir("generated/assets/web")
+
+tasks.register("syncWebAssets", Copy) {
+    from("../../outputs") {
+        include "careerpath-app.html"
+        include "careerpath-jobs.html"
+        include "css/**"
+        include "js/**"
+    }
+    into(webAssetsDir)
+}
+
+android {
+    namespace "com.careerpath.app"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.careerpath.app"
+        minSdk 23
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    sourceSets.main.assets.srcDir(webAssetsDir)
+}
+
+tasks.named("preBuild") {
+    dependsOn("syncWebAssets")
+}

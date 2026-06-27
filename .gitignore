@@ -1,3 +1,21 @@
 work/
 .agents/
 .codex/
+
+# Local editor and machine files
+.idea/
+outputs/.idea/
+*.iml
+local.properties
+
+# Gradle and Android build output
+.gradle/
+build/
+out/
+android/build/
+android/app/build/
+android/app/src/main/assets/
+
+# Generated app package/signing files
+*.apk
+*.idsig
