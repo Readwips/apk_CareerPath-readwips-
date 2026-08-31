@@ -1,9 +1,10 @@
 const storageKey = "careerPathJobs";
 const statusMeta = {
-  applied: { label: "Applied", badgeClass: "applied" },
+  recommendation: { label: "Rekomendasi lowongan", badgeClass: "applied" },
+  applied: { label: "Lamaran diterima", badgeClass: "applied" },
   interview: { label: "Interview", badgeClass: "interview" },
-  offer: { label: "Offer", badgeClass: "offer" },
-  rejected: { label: "Rejected", badgeClass: "rejected" }
+  offer: { label: "Penawaran kerja", badgeClass: "offer" },
+  rejected: { label: "Ditolak", badgeClass: "rejected" }
 };
 const legacyDefaultJobIds = new Set(["stellar", "flowstream", "nova", "apex"]);
 let jobs = getJobs();
@@ -114,10 +115,7 @@ function showDetail(id) {
     return;
   }
   const meta = statusMeta[job.status] || statusMeta.applied;
-  detailLogo.textContent = job.logo || job.company.slice(0, 1).toUpperCase();
-  detailLogo.className = `detail-logo ${job.logoClass || ""}`;
-  if (job.logoStyle) detailLogo.setAttribute("style", job.logoStyle);
-  else detailLogo.removeAttribute("style");
+  detailLogo.hidden = true;
   detailBadge.textContent = meta.label;
   detailBadge.className = `badge ${meta.badgeClass}`;
   detailCompany.textContent = job.company;

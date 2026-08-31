@@ -1,25 +1,61 @@
 package com.careerpath.app;
 
+import android.accounts.Account;
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Message;
-import android.view.View;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import com.google.android.gms.auth.GoogleAuthUtil;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.common.api.Scope;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class MainActivity extends Activity {
+    private static final int SIGN_IN_REQUEST = 1001;
+    private static final String GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
+    private static final String LOCAL_ASSET_PREFIX = "file:///android_asset/";
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private WebView webView;
+    private GoogleSignInClient signInClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        GoogleSignInOptions signInOptions = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestEmail()
+            .requestScopes(new Scope(GMAIL_SCOPE))
+            .build();
+        signInClient = GoogleSignIn.getClient(this, signInOptions);
+
         webView = new WebView(this);
-        webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
         setContentView(webView);
 
         WebSettings settings = webView.getSettings();
@@ -27,12 +63,18 @@ public class MainActivity extends Activity {
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
         settings.setAllowFileAccess(true);
-        settings.setAllowContentAccess(true);
+        settings.setAllowContentAccess(false);
         settings.setBlockNetworkLoads(true);
         settings.setSupportMultipleWindows(true);
         settings.setJavaScriptCanOpenWindowsAutomatically(true);
 
-        webView.setWebViewClient(new WebViewClient());
+        webView.addJavascriptInterface(new GmailBridge(), "CareerPathNative");
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                return !request.getUrl().toString().startsWith(LOCAL_ASSET_PREFIX);
+            }
+        });
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
@@ -40,16 +82,16 @@ public class MainActivity extends Activity {
                 popupView.setWebViewClient(new WebViewClient() {
                     @Override
                     public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                        webView.loadUrl(request.getUrl().toString());
+                        String url = request.getUrl().toString();
+                        if (url.startsWith(LOCAL_ASSET_PREFIX)) webView.loadUrl(url);
                         return true;
                     }
 
                     @Override
                     public void onPageStarted(WebView view, String url, Bitmap favicon) {
-                        webView.loadUrl(url);
+                        if (url.startsWith(LOCAL_ASSET_PREFIX)) webView.loadUrl(url);
                     }
                 });
-
                 WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
                 transport.setWebView(popupView);
                 resultMsg.sendToTarget();
@@ -57,11 +99,141 @@ public class MainActivity extends Activity {
             }
         });
 
-        if (savedInstanceState == null) {
-            webView.loadUrl("file:///android_asset/careerpath-app.html");
-        } else {
-            webView.restoreState(savedInstanceState);
+        if (savedInstanceState == null) webView.loadUrl(LOCAL_ASSET_PREFIX + "careerpath-app.html");
+        else webView.restoreState(savedInstanceState);
+        webView.postDelayed(this::autoScanInbox, 1200);
+    }
+
+    private void autoScanInbox() {
+        GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
+        if (account != null && GoogleSignIn.hasPermissions(account, new Scope(GMAIL_SCOPE))) scanInbox(account);
+    }
+
+    public class GmailBridge {
+        @JavascriptInterface
+        public void scanGmail() {
+            runOnUiThread(() -> {
+                GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(MainActivity.this);
+                if (account == null || !GoogleSignIn.hasPermissions(account, new Scope(GMAIL_SCOPE))) {
+                    startActivityForResult(signInClient.getSignInIntent(), SIGN_IN_REQUEST);
+                } else {
+                    scanInbox(account);
+                }
+            });
         }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != SIGN_IN_REQUEST) return;
+        try {
+            scanInbox(GoogleSignIn.getSignedInAccountFromIntent(data).getResult(ApiException.class));
+        } catch (ApiException error) {
+            sendError("Login Google dibatalkan atau gagal (" + error.getStatusCode() + ").");
+        }
+    }
+
+    private void scanInbox(GoogleSignInAccount signedInAccount) {
+        sendLoading();
+        executor.execute(() -> {
+            try {
+                Account account = signedInAccount.getAccount();
+                if (account == null) throw new IllegalStateException("Akun Google tidak tersedia.");
+                String token = GoogleAuthUtil.getToken(this, account, "oauth2:" + GMAIL_SCOPE);
+                JSONArray jobs = fetchCandidateEmails(token);
+                JSONObject result = new JSONObject();
+                result.put("ok", true);
+                result.put("email", signedInAccount.getEmail());
+                result.put("jobs", jobs);
+                sendResult(result);
+            } catch (Exception error) {
+                sendError(error.getMessage() == null ? "Gagal membaca Gmail." : error.getMessage());
+            }
+        });
+    }
+
+    private JSONArray fetchCandidateEmails(String token) throws Exception {
+        String query = "newer_than:1y (application OR interview OR recruiter OR recruitment OR hiring OR lamaran OR wawancara OR seleksi OR karir OR career)";
+        JSONObject list = requestJson("https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=30&q=" + Uri.encode(query), token);
+        JSONArray messages = list.optJSONArray("messages");
+        JSONArray jobs = new JSONArray();
+        if (messages == null) return jobs;
+        for (int index = 0; index < messages.length(); index++) {
+            String id = messages.getJSONObject(index).getString("id");
+            JSONObject message = requestJson("https://gmail.googleapis.com/gmail/v1/users/me/messages/" + id + "?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date", token);
+            JSONObject job = parseCandidate(message);
+            if (job != null) jobs.put(job);
+        }
+        return jobs;
+    }
+
+    private JSONObject parseCandidate(JSONObject message) throws Exception {
+        JSONObject payload = message.optJSONObject("payload");
+        JSONArray headers = payload == null ? null : payload.optJSONArray("headers");
+        if (headers == null) return null;
+        String subject = "";
+        String from = "";
+        for (int index = 0; index < headers.length(); index++) {
+            JSONObject header = headers.getJSONObject(index);
+            if ("Subject".equalsIgnoreCase(header.optString("name"))) subject = header.optString("value");
+            if ("From".equalsIgnoreCase(header.optString("name"))) from = header.optString("value");
+        }
+        String searchable = (subject + " " + message.optString("snippet")).toLowerCase(Locale.ROOT);
+        String status = "applied";
+        if (searchable.matches(".*(job alert|pemberitahuan pekerjaan|lowongan baru|pekerjaan yang cocok|recommended jobs?|rekomendasi lowongan|temukan lowongan).*")) status = "recommendation";
+        if (searchable.matches(".*(application received|lamaran (anda )?(telah )?diterima|telah menerima lamaran|application confirmation|berhasil melamar).*")) status = "applied";
+        if (searchable.matches(".*(interview|wawancara|assessment|tes teknis).*")) status = "interview";
+        else if (searchable.matches(".*(job offer|offer letter|offering|tawaran kerja).*")) status = "offer";
+        else if (searchable.matches(".*(unfortunately|not selected|rejected|belum berhasil|tidak lolos).*")) status = "rejected";
+        String company = from.replaceAll("<[^>]+>", "").replaceAll("(?i)(recruitment|recruiter|careers?|hiring|hr|talent acquisition)", "").replaceAll("[\"'<>]", "").trim();
+        if (company.isEmpty()) company = from.replaceAll(".*<|>.*", "").trim();
+        String role = subject.replaceAll("(?i)(application|lamaran|interview|wawancara|offer|offering|recruitment|update|status|for|at|di|:|-)", " ").replaceAll("\\s+", " ").trim();
+        if (role.isEmpty()) role = "Posisi dari email";
+        long timestamp = message.optLong("internalDate", System.currentTimeMillis());
+        JSONObject job = new JSONObject();
+        job.put("gmailId", message.optString("id"));
+        job.put("company", company);
+        job.put("role", role);
+        job.put("status", status);
+        job.put("date", new SimpleDateFormat("MM/dd/yyyy", Locale.US).format(new Date(timestamp)));
+        job.put("description", message.optString("snippet"));
+        return job;
+    }
+
+    private JSONObject requestJson(String endpoint, String token) throws Exception {
+        HttpURLConnection connection = (HttpURLConnection) new URL(endpoint).openConnection();
+        connection.setRequestProperty("Authorization", "Bearer " + token);
+        connection.setConnectTimeout(15000);
+        connection.setReadTimeout(15000);
+        int status = connection.getResponseCode();
+        InputStream stream = status >= 200 && status < 300 ? connection.getInputStream() : connection.getErrorStream();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
+        StringBuilder body = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) body.append(line);
+        connection.disconnect();
+        if (status < 200 || status >= 300) throw new IllegalStateException("Gmail API gagal (HTTP " + status + ").");
+        return new JSONObject(body.toString());
+    }
+
+    private void sendLoading() {
+        runOnUiThread(() -> webView.evaluateJavascript("window.CareerPathGmail&&window.CareerPathGmail.onLoading()", null));
+    }
+
+    private void sendError(String message) {
+        try {
+            JSONObject result = new JSONObject();
+            result.put("ok", false);
+            result.put("error", message);
+            sendResult(result);
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void sendResult(JSONObject result) {
+        String encoded = JSONObject.quote(result.toString());
+        runOnUiThread(() -> webView.evaluateJavascript("window.CareerPathGmail&&window.CareerPathGmail.onResult(JSON.parse(" + encoded + "))", null));
     }
 
     @Override
@@ -71,11 +243,15 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onDestroy() {
+        executor.shutdownNow();
+        webView.destroy();
+        super.onDestroy();
+    }
+
+    @Override
     public void onBackPressed() {
-        if (webView.canGoBack()) {
-            webView.goBack();
-            return;
-        }
-        super.onBackPressed();
+        if (webView.canGoBack()) webView.goBack();
+        else super.onBackPressed();
     }
 }

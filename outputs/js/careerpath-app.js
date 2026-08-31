@@ -70,6 +70,10 @@ const interviewDateField = document.getElementById("interviewDateField");
 const interviewDateInput = document.getElementById("interviewDateInput");
 const timelineList = document.getElementById("timelineList");
 const deleteJobButton = document.getElementById("deleteJobButton");
+const detailDescriptionTitle = document.getElementById("detailDescriptionTitle");
+const detailSource = document.getElementById("detailSource");
+const detailNoteInput = document.getElementById("detailNoteInput");
+const saveDetailNote = document.getElementById("saveDetailNote");
 const notificationPopover = document.getElementById("notificationPopover");
 const notificationTriggers = Array.from(document.querySelectorAll(".notification-trigger"));
 const notificationClose = document.querySelector(".notification-close");
@@ -79,6 +83,13 @@ const profileNameInput = document.getElementById("profileNameInput");
 const profileNameCancel = document.getElementById("profileNameCancel");
 const aboutAppMenu = document.getElementById("aboutAppMenu");
 const aboutBackButton = document.getElementById("aboutBackButton");
+const gmailScanButton = document.getElementById("gmailScanButton");
+const gmailStatus = document.getElementById("gmailStatus");
+const gmailReviewBackdrop = document.getElementById("gmailReviewBackdrop");
+const gmailReviewSummary = document.getElementById("gmailReviewSummary");
+const gmailReviewList = document.getElementById("gmailReviewList");
+const gmailReviewCancel = document.getElementById("gmailReviewCancel");
+const gmailImportButton = document.getElementById("gmailImportButton");
 const calendarBackdrop = document.getElementById("calendarBackdrop");
 const calendarGrid = document.getElementById("calendarGrid");
 const calendarTitle = document.getElementById("calendarTitle");
@@ -93,23 +104,27 @@ let selectedJobId = null;
 let editingJobId = null;
 let calendarTargetInput = null;
 let calendarViewDate = new Date();
+let gmailCandidates = [];
 
 const statusMeta = {
-  applied: { label: "Applied", badge: "blue" },
+  recommendation: { label: "Rekomendasi lowongan", badge: "blue" },
+  applied: { label: "Lamaran diterima", badge: "blue" },
   interview: { label: "Interview", badge: "orange" },
-  offer: { label: "Offer", badge: "green" },
-  rejected: { label: "Rejected", badge: "red" }
+  offer: { label: "Penawaran kerja", badge: "green" },
+  rejected: { label: "Ditolak", badge: "red" }
 };
 
 const statusPickerLabels = {
-  applied: "Applied",
-  interview: "Interviewing",
-  offer: "Offer",
-  rejected: "Rejected"
+  recommendation: "Rekomendasi lowongan",
+  applied: "Lamaran diterima",
+  interview: "Interview",
+  offer: "Penawaran kerja",
+  rejected: "Ditolak"
 };
 
 const analyticsStatusMeta = [
-  { key: "applied", label: "Applied", color: "#3bbcef" },
+  { key: "recommendation", label: "Rekomendasi", color: "#7f8cff" },
+  { key: "applied", label: "Lamaran diterima", color: "#3bbcef" },
   { key: "interview", label: "Interview", color: "#ff9f43" },
   { key: "rejected", label: "Rejected", color: "#d83a45" },
   { key: "offer", label: "Accepted", color: "#26b960" }
@@ -187,6 +202,88 @@ function handleProfileNameSubmit(event) {
   renderProfile();
   setProfileNameModalOpen(false);
 }
+
+function scanGmail() {
+  if (!window.CareerPathNative?.scanGmail) {
+    gmailStatus.textContent = "Pemindaian Gmail hanya tersedia di APK Android.";
+    return;
+  }
+  window.CareerPathNative.scanGmail();
+}
+
+function setGmailReviewOpen(isOpen) {
+  gmailReviewBackdrop.hidden = !isOpen;
+  if (!isOpen) gmailCandidates = [];
+}
+
+function renderGmailCandidates(candidates, email) {
+  gmailCandidates = candidates;
+  gmailReviewSummary.textContent = `${candidates.length} email kandidat ditemukan dari ${email || "akun Google"}. Pilih data yang ingin disimpan.`;
+  gmailReviewList.replaceChildren(...candidates.map((candidate, index) => {
+    const label = createElement("label", "gmail-review-item");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = true;
+    checkbox.dataset.gmailIndex = String(index);
+    const detail = createElement("span");
+    detail.append(
+      createElement("strong", "", candidate.role),
+      createElement("span", "", `${candidate.company} · ${(statusMeta[candidate.status] || statusMeta.applied).label} · ${candidate.date}`)
+    );
+    label.append(checkbox, detail);
+    return label;
+  }));
+  setGmailReviewOpen(true);
+}
+
+function importGmailCandidates() {
+  const selectedIndexes = Array.from(gmailReviewList.querySelectorAll("input:checked")).map(input => Number(input.dataset.gmailIndex));
+  const existingJobs = getJobs();
+  const existingGmailIds = new Set(existingJobs.map(job => job.gmailId).filter(Boolean));
+  const imported = selectedIndexes
+    .map(index => gmailCandidates[index])
+    .filter(candidate => candidate && !existingGmailIds.has(candidate.gmailId))
+    .map((candidate, index) => ({
+      id: `gmail-${candidate.gmailId || `${Date.now()}-${index}`}`,
+      company: candidate.company,
+      role: candidate.role,
+      status: candidate.status,
+      date: candidate.date,
+      interviewDate: "",
+      offerDate: candidate.status === "offer" ? candidate.date : "",
+      location: "Not specified",
+      salary: "Not provided",
+      referral: "None",
+      source: "Gmail",
+      logo: candidate.company.slice(0, 1).toUpperCase(),
+      logoStyle: "",
+      description: candidate.description || "Diimpor dari Gmail.",
+      gmailId: candidate.gmailId
+    }));
+  saveJobs([...imported, ...existingJobs]);
+  gmailStatus.textContent = `${imported.length} lamaran berhasil diimpor.`;
+  setGmailReviewOpen(false);
+  renderDashboard();
+  showScreen("dashboard", "home");
+}
+
+window.CareerPathGmail = {
+  onLoading() {
+    gmailScanButton.disabled = true;
+    gmailStatus.textContent = "Membaca email rekrutmen...";
+  },
+  onResult(result) {
+    gmailScanButton.disabled = false;
+    if (!result?.ok) {
+      gmailStatus.textContent = result?.error || "Pemindaian Gmail gagal.";
+      return;
+    }
+    const existingGmailIds = new Set(getJobs().map(job => job.gmailId).filter(Boolean));
+    const candidates = (Array.isArray(result.jobs) ? result.jobs : []).filter(candidate => !existingGmailIds.has(candidate.gmailId));
+    gmailStatus.textContent = candidates.length ? "Email baru siap direview." : "Tidak ada email rekrutmen baru.";
+    if (candidates.length) renderGmailCandidates(candidates, result.email);
+  }
+};
 
 // Status picker and calendar
 function setStatusValue(status) {
@@ -401,7 +498,7 @@ function renderDashboard() {
   const jobs = getJobs();
   const counts = getStatusCounts(jobs);
 
-  ["applied", "interview", "offer", "rejected"].forEach(status => {
+  ["recommendation", "applied", "interview", "offer", "rejected"].forEach(status => {
     const stat = document.querySelector(`[data-stat="${status}"]`);
     if (stat) stat.textContent = counts[status] || 0;
   });
@@ -481,8 +578,7 @@ function showJobDetail(jobId) {
   }
   const meta = statusMeta[job.status] || statusMeta.applied;
   selectedJobId = job.id;
-  document.querySelector(".mini-logo").textContent = job.logo || job.company.slice(0, 1).toUpperCase();
-  document.getElementById("detailStatus").textContent = meta.label === "Interview" ? "Interviewing" : meta.label;
+  document.getElementById("detailStatus").textContent = meta.label;
   document.getElementById("detailJobTitle").textContent = job.role;
   const subtitle = document.querySelector(".detail-sub");
   subtitle.replaceChildren(
@@ -490,7 +586,11 @@ function showJobDetail(jobId) {
     createElement("span", "", "•"),
     createElement("span", "", job.location || "Not specified")
   );
-  document.getElementById("detailDescription").textContent = job.description || "No description or notes added yet.";
+  const isGmail = job.source === "Gmail";
+  detailDescriptionTitle.textContent = isGmail ? "Ringkasan email" : "Deskripsi manual";
+  document.getElementById("detailDescription").textContent = job.description || (isGmail ? "Ringkasan email tidak tersedia." : "Belum ada deskripsi manual.");
+  detailSource.textContent = `Sumber: ${isGmail ? "Gmail" : "Manual"}`;
+  detailNoteInput.value = job.note || "";
   renderTimeline(job);
   showScreen("detail", "profile");
 }
@@ -555,6 +655,14 @@ function openEditForm() {
   setFormMode("edit");
   fillForm(job);
   showScreen("add", "add");
+}
+
+function saveSelectedJobNote() {
+  if (!selectedJobId) return;
+  const jobs = getJobs().map(job => job.id === selectedJobId ? { ...job, note: detailNoteInput.value.trim() } : job);
+  saveJobs(jobs);
+  saveDetailNote.textContent = "Tersimpan";
+  window.setTimeout(() => { saveDetailNote.textContent = "Simpan Note"; }, 1200);
 }
 
 function deleteSelectedJob() {
@@ -665,6 +773,7 @@ addJobForm.addEventListener("submit", event => {
   showJobDetail(savedJob.id);
 });
 deleteJobButton.addEventListener("click", deleteSelectedJob);
+saveDetailNote.addEventListener("click", saveSelectedJobNote);
 notificationTriggers.forEach(trigger => {
   trigger.addEventListener("click", event => {
     event.stopPropagation();
@@ -680,6 +789,12 @@ profileNameModal.addEventListener("click", event => {
 });
 aboutAppMenu.addEventListener("click", () => showScreen("about", "profile"));
 aboutBackButton.addEventListener("click", () => showScreen("profile", "profile"));
+gmailScanButton.addEventListener("click", scanGmail);
+gmailReviewCancel.addEventListener("click", () => setGmailReviewOpen(false));
+gmailImportButton.addEventListener("click", importGmailCandidates);
+gmailReviewBackdrop.addEventListener("click", event => {
+  if (event.target === gmailReviewBackdrop) setGmailReviewOpen(false);
+});
 calendarTriggers.forEach(trigger => {
   trigger.addEventListener("click", () => {
     const targetInput = document.getElementById(trigger.dataset.dateInput);
@@ -702,6 +817,7 @@ document.addEventListener("keydown", event => {
     setNotificationsOpen(false);
     setStatusPickerOpen(false);
     setProfileNameModalOpen(false);
+    setGmailReviewOpen(false);
     setCalendarOpen(false);
   }
 });

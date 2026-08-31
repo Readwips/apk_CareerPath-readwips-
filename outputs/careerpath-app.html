@@ -27,8 +27,12 @@
 
         <div class="stats-grid">
           <article class="stat-card">
+            <div class="stat-icon"><span class="material-symbols-outlined">auto_awesome</span></div>
+            <div><div class="stat-label">Rekomendasi</div><div class="stat-value" data-stat="recommendation">0</div></div>
+          </article>
+          <article class="stat-card">
             <div class="stat-icon"><span class="material-symbols-outlined">send</span></div>
-            <div><div class="stat-label">Applied</div><div class="stat-value" data-stat="applied">0</div></div>
+            <div><div class="stat-label">Lamaran diterima</div><div class="stat-value" data-stat="applied">0</div></div>
           </article>
           <article class="stat-card">
             <div class="stat-icon gray"><span class="material-symbols-outlined">groups</span></div>
@@ -45,11 +49,12 @@
         </div>
 
         <div class="chips" aria-label="Filters">
-          <button class="chip active" data-filter="all" aria-pressed="true">All</button>
-          <button class="chip" data-filter="applied" aria-pressed="false">Applied</button>
+          <button class="chip active" data-filter="all" aria-pressed="true">Semua</button>
+          <button class="chip" data-filter="recommendation" aria-pressed="false">Rekomendasi</button>
+          <button class="chip" data-filter="applied" aria-pressed="false">Lamaran diterima</button>
           <button class="chip" data-filter="interview" aria-pressed="false">Interview</button>
-          <button class="chip" data-filter="offer" aria-pressed="false">Offer</button>
-          <button class="chip" data-filter="rejected" aria-pressed="false">Rejected</button>
+          <button class="chip" data-filter="offer" aria-pressed="false">Penawaran kerja</button>
+          <button class="chip" data-filter="rejected" aria-pressed="false">Ditolak</button>
         </div>
 
         <div class="section-head">
@@ -80,7 +85,7 @@
           </article>
           <article class="stat-card analytics-detail-card">
             <div class="stat-icon"><span class="material-symbols-outlined">send</span></div>
-            <div><div class="stat-label">Applied</div><div class="stat-value" data-analytics-stat="applied">0</div></div>
+            <div><div class="stat-label">Lamaran diterima</div><div class="stat-value" data-analytics-stat="applied">0</div></div>
           </article>
           <article class="stat-card analytics-detail-card">
             <div class="stat-icon gray"><span class="material-symbols-outlined">groups</span></div>
@@ -88,11 +93,11 @@
           </article>
           <article class="stat-card analytics-detail-card">
             <div class="stat-icon red"><span class="material-symbols-outlined">cancel</span></div>
-            <div><div class="stat-label">Rejected</div><div class="stat-value" data-analytics-stat="rejected">0</div></div>
+            <div><div class="stat-label">Ditolak</div><div class="stat-value" data-analytics-stat="rejected">0</div></div>
           </article>
           <article class="stat-card analytics-detail-card">
             <div class="stat-icon green"><span class="material-symbols-outlined">emoji_events</span></div>
-            <div><div class="stat-label">Accepted</div><div class="stat-value" data-analytics-stat="offer">0</div></div>
+            <div><div class="stat-label">Penawaran kerja</div><div class="stat-value" data-analytics-stat="offer">0</div></div>
           </article>
         </div>
 
@@ -176,9 +181,8 @@
         <div class="icon-row"><button class="icon-btn" onclick="showScreen('dashboard')" aria-label="Back"><span class="material-symbols-outlined" style="color:#006f93;">arrow_back</span></button><div class="brand" style="font-size:24px;">Application Detail</div></div>
         <div class="icon-row"><button class="icon-btn" aria-label="Share"><span class="material-symbols-outlined">share</span></button><button class="icon-btn notification-trigger" type="button" aria-label="Notifications" aria-expanded="false"><span class="material-symbols-outlined">notifications</span></button></div>
       </header>
-      <div class="detail-hero">
-        <div class="detail-logo"><div class="mini-logo">◆</div></div>
-        <div>
+        <div class="detail-hero">
+          <div>
           <span class="status-pill" id="detailStatus">Interviewing</span>
           <h1 class="detail-title" id="detailJobTitle">Senior Product Designer</h1>
           <div class="detail-sub"><span>SkyStream<br>Technologies</span><span>•</span><span>Palo<br>Alto, CA</span></div>
@@ -191,14 +195,15 @@
 
       <div class="detail-stack">
         <section class="panel">
-          <div class="panel-title"><span class="material-symbols-outlined">description</span><h3>Job Description</h3></div>
-          <p id="detailDescription">No description or notes added yet.</p>
+          <div class="panel-title"><span class="material-symbols-outlined">description</span><h3 id="detailDescriptionTitle">Deskripsi manual</h3></div>
+          <p id="detailDescription">Belum ada deskripsi.</p>
+          <p class="detail-source" id="detailSource">Sumber: Manual</p>
         </section>
 
         <section class="panel">
-          <div class="panel-title"><span class="material-symbols-outlined">edit_note</span><h3>Interview Notes</h3><small>Last saved 2h ago</small></div>
-          <textarea class="notes-box" placeholder="Type your interview preparation, questions, or notes here..."></textarea>
-          <button class="notes-save">Save Draft</button>
+          <div class="panel-title"><span class="material-symbols-outlined">edit_note</span><h3>Note</h3></div>
+          <textarea class="notes-box" id="detailNoteInput" placeholder="Tulis catatan tambahan..."></textarea>
+          <button class="notes-save" id="saveDetailNote" type="button">Simpan Note</button>
         </section>
 
         <section class="panel">
@@ -227,6 +232,15 @@
             <div class="profile-value" id="profileUserName"></div>
           </div>
           <button class="profile-edit" type="button" aria-label="Edit profile" onclick="editProfileName()"><span class="material-symbols-outlined">edit</span></button>
+        </section>
+
+        <section class="gmail-card" aria-label="Import lamaran dari Gmail">
+          <div>
+            <h2>Pindai Gmail</h2>
+            <p>Temukan email rekrutmen setahun terakhir. Data hanya disimpan setelah kamu memilihnya.</p>
+          </div>
+          <button class="gmail-scan-button" id="gmailScanButton" type="button">Hubungkan dan pindai Gmail</button>
+          <div class="gmail-status" id="gmailStatus" role="status"></div>
         </section>
 
         <section class="profile-menu" aria-label="Profile menu">
@@ -302,6 +316,17 @@
         </div>
       </form>
     </div>
+    <div class="gmail-review-backdrop" id="gmailReviewBackdrop" hidden role="dialog" aria-modal="true" aria-labelledby="gmailReviewTitle">
+      <section class="gmail-review-card">
+        <h3 id="gmailReviewTitle">Review hasil Gmail</h3>
+        <p id="gmailReviewSummary"></p>
+        <div class="gmail-review-list" id="gmailReviewList"></div>
+        <div class="profile-modal-actions">
+          <button class="profile-modal-cancel" id="gmailReviewCancel" type="button">Batal</button>
+          <button class="profile-modal-save" id="gmailImportButton" type="button">Impor pilihan</button>
+        </div>
+      </section>
+    </div>
     <div class="status-backdrop" id="statusBackdrop" hidden>
       <section class="status-card" role="dialog" aria-modal="true" aria-labelledby="statusPickerTitle">
         <div class="status-head">
@@ -312,11 +337,19 @@
           <button class="status-close" id="statusPickerClose" type="button" aria-label="Close status picker">x</button>
         </div>
         <div class="status-options">
+          <button class="status-option" type="button" data-status-option="recommendation">
+            <span class="status-option-icon"><span class="material-symbols-outlined">auto_awesome</span></span>
+            <span>
+              <span class="status-option-title">Rekomendasi lowongan</span>
+              <span class="status-option-subtitle">Email hanya menyarankan pekerjaan</span>
+            </span>
+            <span class="status-radio"></span>
+          </button>
           <button class="status-option is-selected" type="button" data-status-option="applied">
             <span class="status-option-icon"><span class="material-symbols-outlined">send</span></span>
             <span>
-              <span class="status-option-title">Applied</span>
-              <span class="status-option-subtitle">Lamaran baru dikirim</span>
+              <span class="status-option-title">Lamaran diterima</span>
+              <span class="status-option-subtitle">Perusahaan atau platform mengonfirmasi lamaran</span>
             </span>
             <span class="status-radio"></span>
           </button>
@@ -331,7 +364,7 @@
           <button class="status-option" type="button" data-status-option="offer">
             <span class="status-option-icon green"><span class="material-symbols-outlined">emoji_events</span></span>
             <span>
-              <span class="status-option-title">Offer</span>
+              <span class="status-option-title">Penawaran kerja</span>
               <span class="status-option-subtitle">Mendapat tawaran kerja</span>
             </span>
             <span class="status-radio"></span>
@@ -339,7 +372,7 @@
           <button class="status-option" type="button" data-status-option="rejected">
             <span class="status-option-icon red"><span class="material-symbols-outlined">cancel</span></span>
             <span>
-              <span class="status-option-title">Rejected</span>
+              <span class="status-option-title">Ditolak</span>
               <span class="status-option-subtitle">Lamaran ditolak</span>
             </span>
             <span class="status-radio"></span>
