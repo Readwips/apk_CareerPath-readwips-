@@ -81,9 +81,11 @@ const profileNameForm = document.getElementById("profileNameForm");
 const profileNameInput = document.getElementById("profileNameInput");
 const profileNameCancel = document.getElementById("profileNameCancel");
 const aboutAppMenu = document.getElementById("aboutAppMenu");
+const exportDataButton = document.getElementById("exportDataButton");
 const aboutBackButton = document.getElementById("aboutBackButton");
 const gmailScanButton = document.getElementById("gmailScanButton");
 const gmailStatus = document.getElementById("gmailStatus");
+const gmailLogoutButton = document.getElementById("gmailLogoutButton");
 const gmailReviewBackdrop = document.getElementById("gmailReviewBackdrop");
 const gmailReviewSummary = document.getElementById("gmailReviewSummary");
 const gmailReviewList = document.getElementById("gmailReviewList");
@@ -210,6 +212,31 @@ function scanGmail() {
   window.CareerPathNative.scanGmail();
 }
 
+function logoutGmail() {
+  if (window.CareerPathNative?.logoutGmail) {
+    window.CareerPathNative.logoutGmail();
+  }
+}
+
+function exportData() {
+  const jobs = getJobs();
+  const dataString = JSON.stringify(jobs, null, 2);
+  if (window.CareerPathNative?.exportData) {
+    window.CareerPathNative.exportData(dataString);
+    return;
+  }
+  const blob = new Blob([dataString], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const dateStr = new Date().toISOString().split("T")[0];
+  link.href = url;
+  link.download = `careerpath-backup-${dateStr}.json`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 function setGmailReviewOpen(isOpen) {
   gmailReviewBackdrop.hidden = !isOpen;
   if (!isOpen) gmailCandidates = [];
@@ -273,17 +300,23 @@ window.CareerPathGmail = {
   },
   onResult(result) {
     gmailScanButton.disabled = false;
+    if (result?.action === "logout") {
+      gmailStatus.textContent = "Akun Google telah dikeluarkan.";
+      gmailLogoutButton.classList.add("is-hidden");
+      return;
+    }
     if (!result?.ok) {
       gmailStatus.textContent = result?.error || "Pemindaian Gmail gagal.";
       return;
     }
+    gmailLogoutButton.classList.remove("is-hidden");
     const scannedCandidates = Array.isArray(result.jobs) ? result.jobs : [];
     const scannedById = new Map(scannedCandidates.map(candidate => [candidate.gmailId, candidate]));
     const currentJobs = getJobs();
     let correctedCount = 0;
     const correctedJobs = currentJobs.map(job => {
       const candidate = job.gmailId ? scannedById.get(job.gmailId) : null;
-      if (!candidate || candidate.status === job.status) return job;
+      if (!candidate || candidate.status === job.status || job.manualStatusUpdated) return job;
       correctedCount += 1;
       return { ...job, status: candidate.status };
     });
@@ -633,7 +666,9 @@ function buildJobFromForm() {
     source: existing?.source || "Entri manual",
     logo: existing?.logo || company.slice(0, 1).toUpperCase(),
     logoStyle: existing?.logoStyle || "",
-    description: notes || "Belum ada catatan."
+    description: notes || "Belum ada catatan.",
+    gmailId: existing?.gmailId || null,
+    manualStatusUpdated: Boolean(existing?.gmailId) && (existing.status !== status || existing.manualStatusUpdated)
   };
 }
 
@@ -801,9 +836,11 @@ profileNameCancel.addEventListener("click", () => setProfileNameModalOpen(false)
 profileNameModal.addEventListener("click", event => {
   if (event.target === profileNameModal) setProfileNameModalOpen(false);
 });
+exportDataButton.addEventListener("click", exportData);
 aboutAppMenu.addEventListener("click", () => showScreen("about", "profile"));
 aboutBackButton.addEventListener("click", () => showScreen("profile", "profile"));
 gmailScanButton.addEventListener("click", scanGmail);
+gmailLogoutButton.addEventListener("click", logoutGmail);
 gmailReviewCancel.addEventListener("click", () => setGmailReviewOpen(false));
 gmailImportButton.addEventListener("click", importGmailCandidates);
 gmailReviewBackdrop.addEventListener("click", event => {

@@ -14,6 +14,14 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.DownloadListener;
+import android.app.DownloadManager;
+import android.content.ContentValues;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.widget.Toast;
 
 import com.google.android.gms.auth.GoogleAuthUtil;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -29,6 +37,7 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -100,6 +109,25 @@ public class MainActivity extends Activity {
             }
         });
 
+        webView.setDownloadListener((url, userAgent, contentDisposition, mimetype, contentLength) -> {
+            try {
+                DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+                request.setMimeType(mimetype);
+                request.addRequestHeader("cookie", android.webkit.CookieManager.getInstance().getCookie(url));
+                request.addRequestHeader("User-Agent", userAgent);
+                request.setDescription("Mengunduh file backup...");
+                request.setTitle("careerpath-backup.json");
+                request.allowScanningByMediaScanner();
+                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "careerpath-backup-" + System.currentTimeMillis() + ".json");
+                DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+                if (dm != null) dm.enqueue(request);
+                Toast.makeText(getApplicationContext(), "Mengunduh backup...", Toast.LENGTH_SHORT).show();
+            } catch (Exception e) {
+                Toast.makeText(getApplicationContext(), "Gagal mengunduh: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+
         if (savedInstanceState == null) webView.loadUrl(LOCAL_ASSET_PREFIX + "careerpath-app.html");
         else webView.restoreState(savedInstanceState);
         webView.postDelayed(this::autoScanInbox, 1200);
@@ -119,6 +147,49 @@ public class MainActivity extends Activity {
                     startActivityForResult(signInClient.getSignInIntent(), SIGN_IN_REQUEST);
                 } else {
                     scanInbox(account);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void logoutGmail() {
+            runOnUiThread(() -> {
+                signInClient.signOut().addOnCompleteListener(task -> {
+                    try {
+                        JSONObject result = new JSONObject();
+                        result.put("ok", true);
+                        result.put("action", "logout");
+                        sendResult(result);
+                    } catch (Exception ignored) {}
+                });
+            });
+        }
+
+        @JavascriptInterface
+        public void exportData(String jsonString) {
+            runOnUiThread(() -> {
+                try {
+                    String fileName = "careerpath-backup-" + new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(new Date()) + ".json";
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        ContentValues values = new ContentValues();
+                        values.put(MediaStore.Downloads.DISPLAY_NAME, fileName);
+                        values.put(MediaStore.Downloads.MIME_TYPE, "application/json");
+                        values.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+                        Uri uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                        if (uri != null) {
+                            try (OutputStream out = getContentResolver().openOutputStream(uri)) {
+                                if (out != null) out.write(jsonString.getBytes(StandardCharsets.UTF_8));
+                            }
+                        }
+                    } else {
+                        java.io.File file = new java.io.File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName);
+                        try (java.io.FileOutputStream out = new java.io.FileOutputStream(file)) {
+                            out.write(jsonString.getBytes(StandardCharsets.UTF_8));
+                        }
+                    }
+                    Toast.makeText(getApplicationContext(), "Backup tersimpan di folder Download", Toast.LENGTH_SHORT).show();
+                } catch (Exception e) {
+                    Toast.makeText(getApplicationContext(), "Gagal menyimpan backup", Toast.LENGTH_SHORT).show();
                 }
             });
         }
