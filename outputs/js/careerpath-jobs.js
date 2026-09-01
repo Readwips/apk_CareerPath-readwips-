@@ -66,7 +66,7 @@ function createJobCard(job) {
 
   const metaWrap = createElement("div", "job-meta");
   metaWrap.appendChild(createElement("span", `badge ${meta.badgeClass}`, meta.label));
-  metaWrap.appendChild(createElement("span", "", job.date || "No date"));
+  metaWrap.appendChild(createElement("span", "", job.date || "Tanpa tanggal"));
   button.append(text, metaWrap);
   button.addEventListener("click", () => showDetail(job.id));
   return button;
@@ -91,9 +91,9 @@ function renderList() {
   const summaryLabels = document.querySelectorAll(".summary-card span");
   const summary = [
     ["Total", jobs.length],
-    ["Applied", counts.applied || 0],
+    ["Lamaran", counts.applied || 0],
     ["Interview", counts.interview || 0],
-    ["Offer", counts.offer || 0]
+    ["Penawaran", counts.offer || 0]
   ];
   summary.forEach(([label, value], index) => {
     if (summaryNumbers[index]) summaryNumbers[index].textContent = value;
@@ -103,7 +103,7 @@ function renderList() {
 
 function showList() {
   document.body.classList.remove("detail-mode");
-  backBtn.textContent = "Back";
+  backBtn.textContent = "Kembali";
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -120,15 +120,15 @@ function showDetail(id) {
   detailBadge.className = `badge ${meta.badgeClass}`;
   detailCompany.textContent = job.company;
   detailRole.textContent = job.role;
-  detailDate.textContent = job.date || "No date";
-  detailLocation.textContent = job.location || "Not specified";
-  detailSalary.textContent = job.salary || "Not provided";
-  detailSource.textContent = job.source || "Manual entry";
-  detailDescription.textContent = job.description || "No description or notes added yet.";
-  const steps = job.steps || ["Review the saved application.", "Prepare next follow-up.", "Update the status when progress changes."];
+  detailDate.textContent = job.date || "Tanpa tanggal";
+  detailLocation.textContent = job.location || "Belum ditentukan";
+  detailSalary.textContent = job.salary || "Belum ada";
+  detailSource.textContent = job.source || "Entri manual";
+  detailDescription.textContent = job.description || "Belum ada catatan.";
+  const steps = job.steps || ["Tinjau kembali lamaran.", "Siapkan tahap selanjutnya.", "Perbarui status saat ada kemajuan."];
   detailSteps.replaceChildren(...steps.map(step => createElement("li", "", step)));
   document.body.classList.add("detail-mode");
-  backBtn.textContent = "Back to Jobs";
+  backBtn.textContent = "Kembali";
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 

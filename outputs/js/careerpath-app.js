@@ -36,7 +36,6 @@ const iconPaths = {
   timeline: '<path d="M4 17l5-5 4 3 7-8"/><path d="M4 20h16"/>'
 };
 
-// Keep icons available offline by replacing Material Symbol names with inline SVG.
 document.querySelectorAll(".material-symbols-outlined").forEach(icon => {
   const name = icon.textContent.trim();
   const paths = iconPaths[name];
@@ -126,13 +125,13 @@ const analyticsStatusMeta = [
   { key: "recommendation", label: "Rekomendasi", color: "#7f8cff" },
   { key: "applied", label: "Lamaran diterima", color: "#3bbcef" },
   { key: "interview", label: "Interview", color: "#ff9f43" },
-  { key: "rejected", label: "Rejected", color: "#d83a45" },
-  { key: "offer", label: "Accepted", color: "#26b960" }
+  { key: "rejected", label: "Ditolak", color: "#d83a45" },
+  { key: "offer", label: "Penawaran kerja", color: "#26b960" }
 ];
 
 const legacyDefaultJobIds = new Set(["stellar", "flowstream", "nova", "apex"]);
 
-// Storage
+
 function normalizeJobs(jobs) {
   if (!Array.isArray(jobs)) return [];
   return jobs.filter(job =>
@@ -172,7 +171,7 @@ function saveUserProfile(profile) {
   localStorage.setItem(userStorageKey, JSON.stringify(profile));
 }
 
-// Profile
+
 function renderProfile() {
   const profile = getUserProfile();
   const userName = (profile.name || "").trim();
@@ -251,9 +250,9 @@ function importGmailCandidates() {
       date: candidate.date,
       interviewDate: "",
       offerDate: candidate.status === "offer" ? candidate.date : "",
-      location: "Not specified",
-      salary: "Not provided",
-      referral: "None",
+      location: "Belum ditentukan",
+      salary: "Belum ada",
+      referral: "Tidak ada",
       source: "Gmail",
       logo: candidate.company.slice(0, 1).toUpperCase(),
       logoStyle: "",
@@ -278,14 +277,28 @@ window.CareerPathGmail = {
       gmailStatus.textContent = result?.error || "Pemindaian Gmail gagal.";
       return;
     }
-    const existingGmailIds = new Set(getJobs().map(job => job.gmailId).filter(Boolean));
-    const candidates = (Array.isArray(result.jobs) ? result.jobs : []).filter(candidate => !existingGmailIds.has(candidate.gmailId));
-    gmailStatus.textContent = candidates.length ? "Email baru siap direview." : "Tidak ada email rekrutmen baru.";
+    const scannedCandidates = Array.isArray(result.jobs) ? result.jobs : [];
+    const scannedById = new Map(scannedCandidates.map(candidate => [candidate.gmailId, candidate]));
+    const currentJobs = getJobs();
+    let correctedCount = 0;
+    const correctedJobs = currentJobs.map(job => {
+      const candidate = job.gmailId ? scannedById.get(job.gmailId) : null;
+      if (!candidate || candidate.status === job.status) return job;
+      correctedCount += 1;
+      return { ...job, status: candidate.status };
+    });
+    if (correctedCount) {
+      saveJobs(correctedJobs);
+      renderDashboard();
+    }
+    const existingGmailIds = new Set(correctedJobs.map(job => job.gmailId).filter(Boolean));
+    const candidates = scannedCandidates.filter(candidate => !existingGmailIds.has(candidate.gmailId));
+    gmailStatus.textContent = candidates.length ? "Email baru siap direview." : correctedCount ? `${correctedCount} status lama dikoreksi.` : "Tidak ada email rekrutmen baru.";
     if (candidates.length) renderGmailCandidates(candidates, result.email);
   }
 };
 
-// Status picker and calendar
+
 function setStatusValue(status) {
   const nextStatus = statusPickerLabels[status] ? status : "applied";
   statusInput.value = nextStatus;
@@ -402,7 +415,7 @@ function chooseToday() {
   calendarTargetInput.focus();
 }
 
-// DOM helpers
+
 function createElement(tag, className, text) {
   const element = document.createElement(tag);
   if (className) element.className = className;
@@ -410,7 +423,7 @@ function createElement(tag, className, text) {
   return element;
 }
 
-// Dashboard and analytics rendering
+
 function createActivityCard(job) {
   const meta = statusMeta[job.status] || statusMeta.applied;
   const button = createElement("button", "activity-card");
@@ -425,7 +438,7 @@ function createActivityCard(job) {
 
   const metaWrap = createElement("div", "activity-meta");
   metaWrap.appendChild(createElement("span", `badge ${meta.badge}`, meta.label));
-  metaWrap.appendChild(createElement("span", "", job.date || "No date"));
+  metaWrap.appendChild(createElement("span", "", job.date || "Tanpa tanggal"));
 
   button.append(textWrap, metaWrap);
   return button;
@@ -457,16 +470,16 @@ function createTimelineEvent(event) {
 
 function getTimelineEvents(job) {
   if (job.status === "applied") {
-    return [{ title: "Applied", date: job.date || "Application saved", kind: "applied", dot: "" }];
+    return [{ title: "Lamaran diterima", date: job.date || "Lamaran tersimpan", kind: "applied", dot: "" }];
   }
   if (job.status === "interview" && job.interviewDate) {
-    return [{ title: "On-site Interview", date: `Scheduled: ${job.interviewDate}`, kind: "current", dot: "current" }];
+    return [{ title: "Interview", date: `Dijadwalkan: ${job.interviewDate}`, kind: "current", dot: "current" }];
   }
   if (job.status === "offer") {
-    return [{ title: "Offer", date: job.offerDate || job.date || "Offer received", kind: "offer", dot: "" }];
+    return [{ title: "Penawaran kerja", date: job.offerDate || job.date || "Penawaran diterima", kind: "offer", dot: "" }];
   }
   if (job.status === "rejected") {
-    return [{ title: "Rejected", date: job.date || "Application closed", kind: "rejected", dot: "" }];
+    return [{ title: "Ditolak", date: job.date || "Lamaran ditutup", kind: "rejected", dot: "" }];
   }
   return [];
 }
@@ -475,7 +488,7 @@ function renderTimeline(job) {
   const events = getTimelineEvents(job);
   timelineList.classList.toggle("single", events.length <= 1);
   if (!events.length) {
-    timelineList.replaceChildren(createElement("p", "timeline-empty", "Add the required status date to show this job on the timeline."));
+    timelineList.replaceChildren(createElement("p", "timeline-empty", "Tambahkan tanggal status untuk menampilkan timeline."));
     return;
   }
   timelineList.replaceChildren(...events.map(createTimelineEvent));
@@ -563,7 +576,7 @@ function renderAnalytics() {
     );
     const statusCell = document.createElement("td");
     statusCell.appendChild(createElement("span", `table-badge ${job.status}`, meta.label));
-    const dateCell = createElement("td", "", job.date || "No date");
+    const dateCell = createElement("td", "", job.date || "Tanpa tanggal");
     row.append(jobCell, statusCell, dateCell);
     return row;
   }));
@@ -584,18 +597,19 @@ function showJobDetail(jobId) {
   subtitle.replaceChildren(
     createElement("span", "", job.company),
     createElement("span", "", "•"),
-    createElement("span", "", job.location || "Not specified")
+    createElement("span", "", job.location || "Belum ditentukan")
   );
   const isGmail = job.source === "Gmail";
   detailDescriptionTitle.textContent = isGmail ? "Ringkasan email" : "Deskripsi manual";
   document.getElementById("detailDescription").textContent = job.description || (isGmail ? "Ringkasan email tidak tersedia." : "Belum ada deskripsi manual.");
   detailSource.textContent = `Sumber: ${isGmail ? "Gmail" : "Manual"}`;
   detailNoteInput.value = job.note || "";
+  saveDetailNote.textContent = "Simpan Catatan";
   renderTimeline(job);
   showScreen("detail", "profile");
 }
 
-// Add/edit form
+
 function buildJobFromForm() {
   const company = document.getElementById("companyNameInput").value.trim();
   const role = document.getElementById("jobRoleInput").value.trim();
@@ -613,21 +627,21 @@ function buildJobFromForm() {
     date,
     interviewDate: status === "interview" ? interviewDate : "",
     offerDate: status === "offer" ? (existing?.offerDate || date) : "",
-    location: existing?.location || "Not specified",
-    salary: existing?.salary || "Not provided",
-    referral: existing?.referral || "None",
-    source: existing?.source || "Manual entry",
+    location: existing?.location || "Belum ditentukan",
+    salary: existing?.salary || "Belum ada",
+    referral: existing?.referral || "Tidak ada",
+    source: existing?.source || "Entri manual",
     logo: existing?.logo || company.slice(0, 1).toUpperCase(),
     logoStyle: existing?.logoStyle || "",
-    description: notes || "No description or notes added yet."
+    description: notes || "Belum ada catatan."
   };
 }
 
 function setFormMode(mode) {
   const isEdit = mode === "edit";
-  document.getElementById("formModeCrumb").textContent = isEdit ? "Edit Job" : "Add New";
-  document.getElementById("formTitle").textContent = isEdit ? "Edit Application" : "Application Details";
-  document.getElementById("formSubmitText").textContent = isEdit ? "Update Application" : "Save Application";
+  document.getElementById("formModeCrumb").textContent = isEdit ? "Edit Lamaran" : "Tambah Baru";
+  document.getElementById("formTitle").textContent = isEdit ? "Edit Lamaran" : "Detail Lamaran";
+  document.getElementById("formSubmitText").textContent = isEdit ? "Perbarui Lamaran" : "Simpan Lamaran";
 }
 
 function fillForm(job) {
@@ -635,7 +649,7 @@ function fillForm(job) {
   document.getElementById("jobRoleInput").value = job.role || "";
   document.getElementById("applicationDateInput").value = job.date || new Date().toLocaleDateString("en-US");
   interviewDateInput.value = job.interviewDate || "";
-  document.getElementById("notesInput").value = job.description === "No description or notes added yet." ? "" : (job.description || "");
+  document.getElementById("notesInput").value = job.description === "Belum ada catatan." ? "" : (job.description || "");
   setStatusValue(job.status || "applied");
 }
 
@@ -662,7 +676,7 @@ function saveSelectedJobNote() {
   const jobs = getJobs().map(job => job.id === selectedJobId ? { ...job, note: detailNoteInput.value.trim() } : job);
   saveJobs(jobs);
   saveDetailNote.textContent = "Tersimpan";
-  window.setTimeout(() => { saveDetailNote.textContent = "Simpan Note"; }, 1200);
+  window.setTimeout(() => { saveDetailNote.textContent = "Simpan Catatan"; }, 1200);
 }
 
 function deleteSelectedJob() {
@@ -699,7 +713,7 @@ function filterActivities(filter) {
   });
 }
 
-// Navigation and global UI
+
 function navKeyFor(id) {
   if (id === "add") return "add";
   if (id === "analytics") return "analytics";

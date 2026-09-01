@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -36,15 +36,15 @@
           </article>
           <article class="stat-card">
             <div class="stat-icon gray"><span class="material-symbols-outlined">groups</span></div>
-            <div><div class="stat-label">Interviews</div><div class="stat-value" data-stat="interview">0</div></div>
+            <div><div class="stat-label">Interview</div><div class="stat-value" data-stat="interview">0</div></div>
           </article>
           <article class="stat-card">
             <div class="stat-icon green"><span class="material-symbols-outlined">emoji_events</span></div>
-            <div><div class="stat-label">Offers</div><div class="stat-value" data-stat="offer">0</div></div>
+            <div><div class="stat-label">Penawaran</div><div class="stat-value" data-stat="offer">0</div></div>
           </article>
           <article class="stat-card">
             <div class="stat-icon red"><span class="material-symbols-outlined">cancel</span></div>
-            <div><div class="stat-label">Rejected</div><div class="stat-value" data-stat="rejected">0</div></div>
+            <div><div class="stat-label">Ditolak</div><div class="stat-value" data-stat="rejected">0</div></div>
           </article>
         </div>
 
@@ -58,8 +58,8 @@
         </div>
 
         <div class="section-head">
-          <h2>Recent Activity</h2>
-          <a class="link-btn" href="careerpath-jobs.html" target="_blank" rel="noopener">View All <span class="material-symbols-outlined">chevron_right</span></a>
+          <h2>Aktivitas Terbaru</h2>
+          <a class="link-btn" href="careerpath-jobs.html" target="_blank" rel="noopener">Lihat Semua <span class="material-symbols-outlined">chevron_right</span></a>
         </div>
 
         <div class="activity-list" id="activityList"></div>
@@ -75,12 +75,12 @@
         </div>
       </header>
       <div class="content analytics-content">
-        <h1>Job Statistics</h1>
-        <p class="subtitle">Track the shape of your applications by status.</p>
+        <h1>Statistik Lamaran</h1>
+        <p class="subtitle">Pantau perkembangan lamaran berdasarkan status.</p>
 
         <div class="analytics-summary" id="analyticsSummary" aria-label="Application summary">
           <article class="stat-card total-card">
-            <div><div class="stat-label">Total Applications</div><div class="stat-value" data-analytics-stat="total">0</div></div>
+            <div><div class="stat-label">Total Lamaran</div><div class="stat-value" data-analytics-stat="total">0</div></div>
             <button class="stat-icon analytics-toggle" type="button" id="analyticsSummaryToggle" aria-label="Show status summary" aria-expanded="false"><span class="material-symbols-outlined">dashboard</span></button>
           </article>
           <article class="stat-card analytics-detail-card">
@@ -102,7 +102,7 @@
         </div>
 
         <section class="analytics-panel" aria-label="Status distribution">
-          <h2>Status Distribution</h2>
+          <h2>Distribusi Status</h2>
           <div class="donut-wrap">
             <div class="donut-chart" id="analyticsDonut">
               <div class="donut-center">
@@ -117,9 +117,9 @@
         </section>
 
         <section class="analytics-panel" aria-label="Recent applications table">
-          <h2>Recent Applications</h2>
+          <h2>Lamaran Terbaru</h2>
           <table class="applications-table">
-            <thead><tr><th>Job</th><th>Status</th><th>Date</th></tr></thead>
+            <thead><tr><th>Pekerjaan</th><th>Status</th><th>Tanggal</th></tr></thead>
             <tbody id="analyticsTableBody"></tbody>
           </table>
         </section>
@@ -134,18 +134,18 @@
         </div>
       </header>
       <div class="content">
-        <div class="breadcrumb"><span>Applications</span><span class="material-symbols-outlined">chevron_right</span><span class="active" id="formModeCrumb">Add New</span></div>
-        <h1 class="add-title" id="formTitle">Application Details</h1>
-        <p class="subtitle">Keep track of your professional journey by documenting every step.</p>
+        <div class="breadcrumb"><span>Lamaran</span><span class="material-symbols-outlined">chevron_right</span><span class="active" id="formModeCrumb">Tambah Baru</span></div>
+        <h1 class="add-title" id="formTitle">Detail Lamaran</h1>
+        <p class="subtitle">Catat setiap lamaran kerja yang kamu kirim.</p>
 
         <form class="form-card" id="addJobForm">
           <div class="form-field">
-            <label>Company Name</label>
-            <div class="control"><span class="material-symbols-outlined">apartment</span><input id="companyNameInput" placeholder="e.g. Google, Stripe, Linear" required></div>
+            <label>Nama Perusahaan</label>
+            <div class="control"><span class="material-symbols-outlined">apartment</span><input id="companyNameInput" placeholder="cth. Tokopedia, BCA, Telkom" required></div>
           </div>
           <div class="form-field">
-            <label>Job Role</label>
-            <div class="control"><span class="material-symbols-outlined">business_center</span><input id="jobRoleInput" placeholder="e.g. Senior Product Designer" required></div>
+            <label>Posisi</label>
+            <div class="control"><span class="material-symbols-outlined">business_center</span><input id="jobRoleInput" placeholder="cth. Data Analyst, Admin, Staff IT" required></div>
           </div>
           <div class="form-field">
             <label>Status</label>
@@ -159,37 +159,37 @@
             </div>
           </div>
           <div class="form-field">
-            <label>Application Date</label>
-            <div class="control"><span class="material-symbols-outlined">calendar_month</span><input id="applicationDateInput" value="10/27/2023" aria-label="Application date"><button class="calendar-trigger" type="button" data-date-input="applicationDateInput" aria-label="Choose application date"><span class="material-symbols-outlined">calendar_today</span></button></div>
+            <label>Tanggal Lamaran</label>
+            <div class="control"><span class="material-symbols-outlined">calendar_month</span><input id="applicationDateInput" aria-label="Tanggal lamaran"><button class="calendar-trigger" type="button" data-date-input="applicationDateInput" aria-label="Pilih tanggal lamaran"><span class="material-symbols-outlined">calendar_today</span></button></div>
           </div>
           <div class="form-field is-hidden" id="interviewDateField">
-            <label>Interview Date</label>
-            <div class="control"><span class="material-symbols-outlined">calendar_month</span><input id="interviewDateInput" placeholder="e.g. Nov 5, 2023" aria-label="Interview date"><button class="calendar-trigger" type="button" data-date-input="interviewDateInput" aria-label="Choose interview date"><span class="material-symbols-outlined">calendar_today</span></button></div>
+            <label>Tanggal Interview</label>
+            <div class="control"><span class="material-symbols-outlined">calendar_month</span><input id="interviewDateInput" placeholder="Pilih tanggal" aria-label="Tanggal interview"><button class="calendar-trigger" type="button" data-date-input="interviewDateInput" aria-label="Pilih tanggal interview"><span class="material-symbols-outlined">calendar_today</span></button></div>
           </div>
           <div class="form-field">
-            <label><span>Description &amp; Notes</span><span style="color:#7e8891;font-weight:600;letter-spacing:0;">Optional</span></label>
-            <div class="control textarea"><textarea id="notesInput" placeholder="Key responsibilities, referral details, or thoughts on the company culture..."></textarea></div>
+            <label><span>Catatan</span><span style="color:#7e8891;font-weight:600;letter-spacing:0;">Opsional</span></label>
+            <div class="control textarea"><textarea id="notesInput" placeholder="Catatan tambahan..."></textarea></div>
           </div>
-          <button class="primary-btn sky" type="submit"><span class="material-symbols-outlined">save</span><span id="formSubmitText">Save Application</span></button>
-          <div class="save-note">Your data is synced across all your devices</div>
+          <button class="primary-btn sky" type="submit"><span class="material-symbols-outlined">save</span><span id="formSubmitText">Simpan Lamaran</span></button>
+          <div class="save-note">Data tersimpan di perangkat ini</div>
         </form>
       </div>
     </section>
 
     <section class="screen" id="detail">
       <header class="topbar">
-        <div class="icon-row"><button class="icon-btn" onclick="showScreen('dashboard')" aria-label="Back"><span class="material-symbols-outlined" style="color:#006f93;">arrow_back</span></button><div class="brand" style="font-size:24px;">Application Detail</div></div>
+        <div class="icon-row"><button class="icon-btn" onclick="showScreen('dashboard')" aria-label="Kembali"><span class="material-symbols-outlined" style="color:#006f93;">arrow_back</span></button><div class="brand" style="font-size:24px;">Detail Lamaran</div></div>
         <div class="icon-row"><button class="icon-btn" aria-label="Share"><span class="material-symbols-outlined">share</span></button><button class="icon-btn notification-trigger" type="button" aria-label="Notifications" aria-expanded="false"><span class="material-symbols-outlined">notifications</span></button></div>
       </header>
         <div class="detail-hero">
           <div>
-          <span class="status-pill" id="detailStatus">Interviewing</span>
-          <h1 class="detail-title" id="detailJobTitle">Senior Product Designer</h1>
-          <div class="detail-sub"><span>SkyStream<br>Technologies</span><span>•</span><span>Palo<br>Alto, CA</span></div>
+          <span class="status-pill" id="detailStatus"></span>
+          <h1 class="detail-title" id="detailJobTitle"></h1>
+          <div class="detail-sub"></div>
         </div>
         <div class="detail-actions">
-          <button class="action-btn delete" id="deleteJobButton"><span class="material-symbols-outlined" style="font-size:20px;">delete</span>Delete</button>
-          <button class="action-btn edit" onclick="openEditForm()"><span class="material-symbols-outlined" style="font-size:20px;">edit</span>Edit Details</button>
+          <button class="action-btn delete" id="deleteJobButton"><span class="material-symbols-outlined" style="font-size:20px;">delete</span>Hapus</button>
+          <button class="action-btn edit" onclick="openEditForm()"><span class="material-symbols-outlined" style="font-size:20px;">edit</span>Edit</button>
         </div>
       </div>
 
@@ -201,9 +201,9 @@
         </section>
 
         <section class="panel">
-          <div class="panel-title"><span class="material-symbols-outlined">edit_note</span><h3>Note</h3></div>
+          <div class="panel-title"><span class="material-symbols-outlined">edit_note</span>          <h3>Catatan</h3></div>
           <textarea class="notes-box" id="detailNoteInput" placeholder="Tulis catatan tambahan..."></textarea>
-          <button class="notes-save" id="saveDetailNote" type="button">Simpan Note</button>
+          <button class="notes-save" id="saveDetailNote" type="button">Simpan Catatan</button>
         </section>
 
         <section class="panel">
@@ -278,21 +278,21 @@
         <section class="about-card">
           <div class="about-icon"><span class="material-symbols-outlined">info</span></div>
           <h1>CareerPath</h1>
-          <p>CareerPath adalah aplikasi untuk membantu user mencatat dan memantau proses lamaran kerja dengan lebih rapi. Di aplikasi ini, user bisa menambahkan data lamaran, mengatur status lamaran seperti Applied, Interview, Offer, atau Rejected, serta melihat detail dan statistik perkembangan lamaran. Aplikasi ini juga dapat berjalan secara offline tanpa perlu login atau internet, sehingga data tersimpan langsung di perangkat user.</p>
+          <p>CareerPath adalah aplikasi untuk mencatat dan memantau proses lamaran kerja. Kamu bisa menambahkan data lamaran secara manual atau memindai email Gmail, mengatur status lamaran, serta melihat statistik perkembangan. Data tersimpan di perangkat.</p>
         </section>
       </div>
     </section>
 
     <nav class="bottom-nav" id="bottomNav">
-      <button class="nav-item active" data-target="dashboard" data-nav="home"><span class="material-symbols-outlined">home</span>Home</button>
-      <button class="nav-item" data-target="add" data-nav="add"><span class="material-symbols-outlined">add_circle</span>Add</button>
-      <button class="nav-item" data-target="analytics" data-nav="analytics"><span class="material-symbols-outlined">analytics</span>Analytics</button>
-      <button class="nav-item" data-target="profile" data-nav="profile"><span class="material-symbols-outlined">person</span>Profile</button>
+      <button class="nav-item active" data-target="dashboard" data-nav="home"><span class="material-symbols-outlined">home</span>Beranda</button>
+      <button class="nav-item" data-target="add" data-nav="add"><span class="material-symbols-outlined">add_circle</span>Tambah</button>
+      <button class="nav-item" data-target="analytics" data-nav="analytics"><span class="material-symbols-outlined">analytics</span>Statistik</button>
+      <button class="nav-item" data-target="profile" data-nav="profile"><span class="material-symbols-outlined">person</span>Profil</button>
     </nav>
 
     <aside class="notification-popover" id="notificationPopover" hidden aria-label="Notifications">
       <div class="notification-head">
-        <h3>Notifications</h3>
+        <h3>Notifikasi</h3>
         <button class="notification-close" type="button" aria-label="Close notifications">x</button>
       </div>
       <div class="notification-list">
@@ -384,16 +384,16 @@
       <section class="calendar-card" role="dialog" aria-modal="true" aria-labelledby="calendarTitle">
         <div class="calendar-head">
           <button class="calendar-nav" type="button" id="calendarPrev" aria-label="Previous month"><span class="material-symbols-outlined">chevron_left</span></button>
-          <h3 id="calendarTitle">Select date</h3>
+          <h3 id="calendarTitle">Pilih tanggal</h3>
           <button class="calendar-nav" type="button" id="calendarNext" aria-label="Next month"><span class="material-symbols-outlined">chevron_right</span></button>
         </div>
         <div class="calendar-weekdays" aria-hidden="true">
-          <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+          <span>Min</span><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span>
         </div>
         <div class="calendar-grid" id="calendarGrid"></div>
         <div class="calendar-actions">
-          <button class="calendar-secondary" type="button" id="calendarCancel">Cancel</button>
-          <button class="calendar-primary" type="button" id="calendarToday">Today</button>
+          <button class="calendar-secondary" type="button" id="calendarCancel">Batal</button>
+          <button class="calendar-primary" type="button" id="calendarToday">Hari ini</button>
         </div>
       </section>
     </div>

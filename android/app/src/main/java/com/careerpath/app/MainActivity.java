@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Message;
+import android.util.Base64;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -161,7 +162,7 @@ public class MainActivity extends Activity {
         if (messages == null) return jobs;
         for (int index = 0; index < messages.length(); index++) {
             String id = messages.getJSONObject(index).getString("id");
-            JSONObject message = requestJson("https://gmail.googleapis.com/gmail/v1/users/me/messages/" + id + "?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date", token);
+            JSONObject message = requestJson("https://gmail.googleapis.com/gmail/v1/users/me/messages/" + id + "?format=full", token);
             JSONObject job = parseCandidate(message);
             if (job != null) jobs.put(job);
         }
@@ -179,13 +180,19 @@ public class MainActivity extends Activity {
             if ("Subject".equalsIgnoreCase(header.optString("name"))) subject = header.optString("value");
             if ("From".equalsIgnoreCase(header.optString("name"))) from = header.optString("value");
         }
-        String searchable = (subject + " " + message.optString("snippet")).toLowerCase(Locale.ROOT);
-        String status = "applied";
-        if (searchable.matches(".*(job alert|pemberitahuan pekerjaan|lowongan baru|pekerjaan yang cocok|recommended jobs?|rekomendasi lowongan|temukan lowongan).*")) status = "recommendation";
-        if (searchable.matches(".*(application received|lamaran (anda )?(telah )?diterima|telah menerima lamaran|application confirmation|berhasil melamar).*")) status = "applied";
-        if (searchable.matches(".*(interview|wawancara|assessment|tes teknis).*")) status = "interview";
-        else if (searchable.matches(".*(job offer|offer letter|offering|tawaran kerja).*")) status = "offer";
-        else if (searchable.matches(".*(unfortunately|not selected|rejected|belum berhasil|tidak lolos).*")) status = "rejected";
+        String body = extractText(payload);
+        String searchable = (subject + " " + message.optString("snippet") + " " + body).toLowerCase(Locale.ROOT);
+        String primaryContext = (subject + " " + message.optString("snippet") + " " + body.substring(0, Math.min(body.length(), 2500))).toLowerCase(Locale.ROOT);
+        boolean applicationEvidence = primaryContext.matches("(?s).*(lamaran (pekerjaan )?(anda|yang anda)|anda (baru saja )?(kirim|mengirim|melamar)|pekerjaan .+ yang anda lamar|konfirmasi lamaran|application (received|confirmation|you submitted)|thank you for applying|terima kasih (atas|telah) (lamaran|mengikuti proses seleksi)).*");
+        boolean selectionStage = primaryContext.matches("(?s).*(undangan|mengundang|masuk ke dalam tahap|tahap seleksi|psikotes|pra[ -]?tes|online assessment|tes teknis|interview|wawancara).*");
+        boolean expired = primaryContext.matches("(?s).*(telah kedaluwarsa|telah ditutup|tidak lagi menerima lamaran|lowongan .+ ditutup|expired|no longer accepting|position .+ closed|tidak lulus|tidak dapat melanjutkan|tidak lolos|tidak diproses lebih lanjut|lamaran anda tidak|we regret to inform|dengan berat hati).*");
+        String status = "recommendation";
+        if (applicationEvidence) status = "applied";
+        if (expired) status = "rejected";
+        else if (selectionStage) status = "interview";
+        else if (primaryContext.matches("(?s).*(job offer|offer letter|surat penawaran|penawaran kerja).*") && applicationEvidence) status = "offer";
+        else if (primaryContext.matches("(?s).*(unfortunately|not selected|rejected|belum berhasil|tidak lolos).*") && applicationEvidence) status = "rejected";
+        else if (!applicationEvidence && searchable.matches("(?s).*(job alert|pemberitahuan pekerjaan|lowongan baru|pekerjaan yang cocok|recommended jobs?|rekomendasi lowongan|temukan lowongan|peluang kerja serupa).*") ) status = "recommendation";
         String company = from.replaceAll("<[^>]+>", "").replaceAll("(?i)(recruitment|recruiter|careers?|hiring|hr|talent acquisition)", "").replaceAll("[\"'<>]", "").trim();
         if (company.isEmpty()) company = from.replaceAll(".*<|>.*", "").trim();
         String role = subject.replaceAll("(?i)(application|lamaran|interview|wawancara|offer|offering|recruitment|update|status|for|at|di|:|-)", " ").replaceAll("\\s+", " ").trim();
@@ -199,6 +206,27 @@ public class MainActivity extends Activity {
         job.put("date", new SimpleDateFormat("MM/dd/yyyy", Locale.US).format(new Date(timestamp)));
         job.put("description", message.optString("snippet"));
         return job;
+    }
+
+    private String extractText(JSONObject part) {
+        if (part == null) return "";
+        String mimeType = part.optString("mimeType");
+        JSONObject body = part.optJSONObject("body");
+        String encoded = body == null ? "" : body.optString("data");
+        String ownText = "";
+        if (!encoded.isEmpty() && ("text/plain".equals(mimeType) || "text/html".equals(mimeType))) {
+            try {
+                ownText = new String(Base64.decode(encoded, Base64.URL_SAFE | Base64.NO_WRAP), StandardCharsets.UTF_8)
+                    .replaceAll("<[^>]+>", " ")
+                    .replaceAll("\\s+", " ");
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        JSONArray parts = part.optJSONArray("parts");
+        if (parts == null) return ownText;
+        StringBuilder text = new StringBuilder(ownText);
+        for (int index = 0; index < parts.length(); index++) text.append(' ').append(extractText(parts.optJSONObject(index)));
+        return text.toString();
     }
 
     private JSONObject requestJson(String endpoint, String token) throws Exception {
