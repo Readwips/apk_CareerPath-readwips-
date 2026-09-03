@@ -46,12 +46,16 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.CountDownLatch;
+import java.util.Collections;
+import java.util.List;
+import java.util.ArrayList;
 
 public class MainActivity extends Activity {
     private static final int SIGN_IN_REQUEST = 1001;
     private static final String GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
     private static final String LOCAL_ASSET_PREFIX = "file:///android_asset/";
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final ExecutorService executor = Executors.newFixedThreadPool(6);
     private WebView webView;
     private GoogleSignInClient signInClient;
 
@@ -228,22 +232,34 @@ public class MainActivity extends Activity {
     private JSONArray fetchCandidateEmails(String token) throws Exception {
         String query = "newer_than:1y (application OR interview OR recruiter OR recruitment OR hiring OR lamaran OR wawancara OR seleksi OR karir OR career)";
         String baseUrl = "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=100&q=" + Uri.encode(query);
-        JSONArray jobs = new JSONArray();
+        List<JSONObject> parsedJobs = Collections.synchronizedList(new ArrayList<>());
         String pageToken = null;
         do {
             String url = pageToken != null ? baseUrl + "&pageToken=" + pageToken : baseUrl;
             JSONObject list = requestJson(url, token);
             JSONArray messages = list.optJSONArray("messages");
-            if (messages != null) {
+            if (messages != null && messages.length() > 0) {
+                CountDownLatch latch = new CountDownLatch(messages.length());
                 for (int index = 0; index < messages.length(); index++) {
                     String id = messages.getJSONObject(index).getString("id");
-                    JSONObject message = requestJson("https://gmail.googleapis.com/gmail/v1/users/me/messages/" + id + "?format=full", token);
-                    JSONObject job = parseCandidate(message);
-                    if (job != null) jobs.put(job);
+                    executor.execute(() -> {
+                        try {
+                            JSONObject message = requestJson("https://gmail.googleapis.com/gmail/v1/users/me/messages/" + id + "?format=full", token);
+                            JSONObject job = parseCandidate(message);
+                            if (job != null) parsedJobs.add(job);
+                        } catch (Exception ignored) {
+                        } finally {
+                            latch.countDown();
+                        }
+                    });
                 }
+                latch.await();
             }
             pageToken = list.optString("nextPageToken", null);
         } while (pageToken != null);
+        
+        JSONArray jobs = new JSONArray();
+        for (JSONObject job : parsedJobs) jobs.put(job);
         return jobs;
     }
 
