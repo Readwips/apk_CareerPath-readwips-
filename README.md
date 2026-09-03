@@ -16,27 +16,7 @@ Bisa input manual atau langsung pindai email Gmail untuk mendeteksi lamaran, und
 - Login / logout akun Google
 - Data tersimpan lokal di perangkat
 
-## Build APK
-
-Buka project di Android Studio, lalu jalankan `app` pada emulator atau HP.
-
-Atau lewat terminal:
-
-```
-.\gradlew.bat assembleDebug
-```
-
-Hasil APK: `android/app/build/outputs/apk/debug/app-debug.apk`
-
-Instal ke HP:
-
-```
-adb install -r android/app/build/outputs/apk/debug/app-debug.apk
-```
-
-## Konfigurasi Gmail (khusus developer)
-
-Bagian ini hanya perlu dilakukan jika kamu build APK sendiri dari source code. User yang langsung instal APK tidak perlu melakukan ini — cukup buka Profil lalu tekan "Hubungkan dan pindai Gmail".
+## Konfigurasi Gmail
 
 1. Aktifkan Gmail API di project Google Cloud
 2. Buat OAuth Client ID tipe Android dengan package `com.careerpath.app`
