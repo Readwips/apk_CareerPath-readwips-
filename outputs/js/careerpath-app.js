@@ -86,11 +86,6 @@ const aboutBackButton = document.getElementById("aboutBackButton");
 const gmailScanButton = document.getElementById("gmailScanButton");
 const gmailStatus = document.getElementById("gmailStatus");
 const gmailLogoutButton = document.getElementById("gmailLogoutButton");
-const gmailReviewBackdrop = document.getElementById("gmailReviewBackdrop");
-const gmailReviewSummary = document.getElementById("gmailReviewSummary");
-const gmailReviewList = document.getElementById("gmailReviewList");
-const gmailReviewCancel = document.getElementById("gmailReviewCancel");
-const gmailImportButton = document.getElementById("gmailImportButton");
 const calendarBackdrop = document.getElementById("calendarBackdrop");
 const calendarGrid = document.getElementById("calendarGrid");
 const calendarTitle = document.getElementById("calendarTitle");
@@ -105,7 +100,6 @@ let selectedJobId = null;
 let editingJobId = null;
 let calendarTargetInput = null;
 let calendarViewDate = new Date();
-let gmailCandidates = [];
 
 const statusMeta = {
   recommendation: { label: "Rekomendasi lowongan", badge: "blue" },
@@ -237,37 +231,10 @@ function exportData() {
   URL.revokeObjectURL(url);
 }
 
-function setGmailReviewOpen(isOpen) {
-  gmailReviewBackdrop.hidden = !isOpen;
-  if (!isOpen) gmailCandidates = [];
-}
-
-function renderGmailCandidates(candidates, email) {
-  gmailCandidates = candidates;
-  gmailReviewSummary.textContent = `${candidates.length} email kandidat ditemukan dari ${email || "akun Google"}. Pilih data yang ingin disimpan.`;
-  gmailReviewList.replaceChildren(...candidates.map((candidate, index) => {
-    const label = createElement("label", "gmail-review-item");
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.checked = true;
-    checkbox.dataset.gmailIndex = String(index);
-    const detail = createElement("span");
-    detail.append(
-      createElement("strong", "", candidate.role),
-      createElement("span", "", `${candidate.company} · ${(statusMeta[candidate.status] || statusMeta.applied).label} · ${candidate.date}`)
-    );
-    label.append(checkbox, detail);
-    return label;
-  }));
-  setGmailReviewOpen(true);
-}
-
-function importGmailCandidates() {
-  const selectedIndexes = Array.from(gmailReviewList.querySelectorAll("input:checked")).map(input => Number(input.dataset.gmailIndex));
+function autoImportGmail(candidates) {
   const existingJobs = getJobs();
   const existingGmailIds = new Set(existingJobs.map(job => job.gmailId).filter(Boolean));
-  const imported = selectedIndexes
-    .map(index => gmailCandidates[index])
+  const imported = candidates
     .filter(candidate => candidate && !existingGmailIds.has(candidate.gmailId))
     .map((candidate, index) => ({
       id: `gmail-${candidate.gmailId || `${Date.now()}-${index}`}`,
@@ -286,11 +253,11 @@ function importGmailCandidates() {
       description: candidate.description || "Diimpor dari Gmail.",
       gmailId: candidate.gmailId
     }));
-  saveJobs([...imported, ...existingJobs]);
-  gmailStatus.textContent = `${imported.length} lamaran berhasil diimpor.`;
-  setGmailReviewOpen(false);
-  renderDashboard();
-  showScreen("dashboard", "home");
+  if (imported.length) {
+    saveJobs([...imported, ...existingJobs]);
+    renderDashboard();
+  }
+  return imported.length;
 }
 
 window.CareerPathGmail = {
@@ -324,10 +291,11 @@ window.CareerPathGmail = {
       saveJobs(correctedJobs);
       renderDashboard();
     }
-    const existingGmailIds = new Set(correctedJobs.map(job => job.gmailId).filter(Boolean));
-    const candidates = scannedCandidates.filter(candidate => !existingGmailIds.has(candidate.gmailId));
-    gmailStatus.textContent = candidates.length ? "Email baru siap direview." : correctedCount ? `${correctedCount} status lama dikoreksi.` : "Tidak ada email rekrutmen baru.";
-    if (candidates.length) renderGmailCandidates(candidates, result.email);
+    const importedCount = autoImportGmail(scannedCandidates);
+    const parts = [];
+    if (importedCount) parts.push(`${importedCount} lamaran baru diimpor`);
+    if (correctedCount) parts.push(`${correctedCount} status dikoreksi`);
+    gmailStatus.textContent = parts.length ? parts.join(", ") + "." : "Tidak ada email rekrutmen baru.";
   }
 };
 
@@ -841,11 +809,6 @@ aboutAppMenu.addEventListener("click", () => showScreen("about", "profile"));
 aboutBackButton.addEventListener("click", () => showScreen("profile", "profile"));
 gmailScanButton.addEventListener("click", scanGmail);
 gmailLogoutButton.addEventListener("click", logoutGmail);
-gmailReviewCancel.addEventListener("click", () => setGmailReviewOpen(false));
-gmailImportButton.addEventListener("click", importGmailCandidates);
-gmailReviewBackdrop.addEventListener("click", event => {
-  if (event.target === gmailReviewBackdrop) setGmailReviewOpen(false);
-});
 calendarTriggers.forEach(trigger => {
   trigger.addEventListener("click", () => {
     const targetInput = document.getElementById(trigger.dataset.dateInput);
@@ -868,7 +831,6 @@ document.addEventListener("keydown", event => {
     setNotificationsOpen(false);
     setStatusPickerOpen(false);
     setProfileNameModalOpen(false);
-    setGmailReviewOpen(false);
     setCalendarOpen(false);
   }
 });

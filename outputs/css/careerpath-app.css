@@ -1049,25 +1049,6 @@ p { margin: 0; color: var(--muted); line-height: 1.55; font-size: 17px; font-wei
 .gmail-scan-button { min-height: 50px; border-radius: 15px; color: #073f57; background: var(--blue); font-weight: 900; }
 .gmail-scan-button:disabled { opacity: .6; }
 .gmail-logout-button { min-height: 42px; border-radius: 12px; color: #d83a45; background: #ffecef; font-weight: 800; font-size: 13px; margin-top: 4px; }
-.gmail-review-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 34;
-  display: grid;
-  place-items: center;
-  padding: 20px;
-  background: rgba(11, 24, 39, .3);
-}
-.gmail-review-backdrop[hidden] { display: none; }
-.gmail-review-card { width: min(100%, 390px); max-height: 82vh; overflow: auto; padding: 20px; border-radius: 22px; background: #fff; }
-.gmail-review-card h3 { margin: 0 0 8px; color: var(--ink); font-size: 22px; }
-.gmail-review-card > p { margin: 0 0 16px; color: #64717d; font-size: 14px; }
-.gmail-review-list { display: grid; gap: 10px; }
-.gmail-review-item { display: grid; grid-template-columns: 24px 1fr; gap: 10px; padding: 12px; border: 1px solid #e1ebf5; border-radius: 16px; background: #f8fbff; }
-.gmail-review-item input { width: 20px; height: 20px; }
-.gmail-review-item strong, .gmail-review-item span { display: block; }
-.gmail-review-item strong { color: var(--ink); font-size: 15px; }
-.gmail-review-item span { margin-top: 3px; color: #687580; font-size: 12px; }
 .profile-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -1436,7 +1417,6 @@ p { margin: 0; color: var(--muted); line-height: 1.55; font-size: 17px; font-wei
   .bottom-nav,
   .notification-popover,
   .status-backdrop,
-  .gmail-review-backdrop,
   .profile-modal-backdrop,
   .calendar-backdrop {
     display: none !important;
