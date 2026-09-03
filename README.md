@@ -1,34 +1,56 @@
-# CareerPath Job Tracker
+# CareerPath
 
-Static HTML prototype for tracking job applications.
+Aplikasi Android untuk mencatat dan memantau lamaran kerja.
 
-This prototype is mobile-only. Open it on a phone-sized viewport; wider desktop screens show a mobile-only notice.
-The app opens directly to the dashboard and runs offline; there is no login, email, or password flow.
+Bisa input manual atau langsung pindai email Gmail untuk mendeteksi lamaran, undangan interview, penawaran kerja, dan penolakan secara otomatis.
 
-Open the app from:
+## Fitur
 
-- `outputs/careerpath-app.html`
+- Dashboard ringkasan status lamaran
+- Tambah lamaran manual (nama perusahaan, posisi, status, tanggal)
+- Pindai Gmail — deteksi email rekrutmen dari Jobstreet, Indeed, email perusahaan, dll
+- Klasifikasi otomatis: Rekomendasi, Lamaran diterima, Interview, Penawaran kerja, Ditolak
+- Detail tiap lamaran dengan sumber (Manual / Gmail) dan catatan pribadi
+- Filter dan statistik per status
+- Backup data ke file JSON
+- Login / logout akun Google
+- Data tersimpan lokal di perangkat
 
-The `View All` page is:
+## Build APK
 
-- `outputs/careerpath-jobs.html`
+Buka project di Android Studio, lalu jalankan `app` pada emulator atau HP.
 
-File structure:
+Atau lewat terminal:
 
-- `outputs/css/` for page styles
-- `outputs/js/` for app behavior
-- `outputs/careerpath-app.html` for the main app markup
-- `outputs/careerpath-jobs.html` for the all-jobs page markup
+```
+.\gradlew.bat assembleDebug
+```
 
-Android APK:
+Hasil APK: `android/app/build/outputs/apk/debug/app-debug.apk`
 
-- Debug APK output: `outputs/CareerPath-debug.apk`
-- Rebuild command: `powershell -ExecutionPolicy Bypass -File android\build-apk.ps1`
-- Install with USB debugging: `adb install -r outputs/CareerPath-debug.apk`
-- Or move the APK to a phone and allow install from unknown sources.
+Instal ke HP:
 
-Android Studio:
+```
+adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+```
 
-- Open this project root folder, or open the `android/` folder directly.
-- If Android Studio shows `Add Configuration`, use `File > Sync Project with Gradle Files`.
-- Run the `app` configuration on an emulator or connected Android phone.
+## Konfigurasi Gmail
+
+Fitur pindai Gmail memerlukan OAuth Client ID dari Google Cloud Console:
+
+1. Aktifkan Gmail API di project Google Cloud
+2. Buat OAuth Client ID tipe Android dengan package `com.careerpath.app`
+3. Masukkan SHA-1 debug signing certificate
+4. Tambahkan akun Gmail sebagai Test User di OAuth consent screen
+
+## Struktur
+
+```
+outputs/
+  careerpath-app.html    — halaman utama
+  careerpath-jobs.html   — halaman semua lamaran
+  css/                   — stylesheet
+  js/                    — logika aplikasi
+android/
+  app/                   — source Android (WebView + Gmail bridge)
+```
