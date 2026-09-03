@@ -16,27 +16,9 @@ Bisa input manual atau langsung pindai email Gmail untuk mendeteksi lamaran, und
 - Login / logout akun Google
 - Data tersimpan lokal di perangkat
 
-## Build APK
-
-Buka project di Android Studio, lalu jalankan `app` pada emulator atau HP.
-
-Atau lewat terminal:
-
-```
-.\gradlew.bat assembleDebug
-```
-
-Hasil APK: `android/app/build/outputs/apk/debug/app-debug.apk`
-
-Instal ke HP:
-
-```
-adb install -r android/app/build/outputs/apk/debug/app-debug.apk
-```
-
 ## Konfigurasi Gmail
 
-Fitur pindai Gmail memerlukan OAuth Client ID dari Google Cloud Console:
+Untuk saat ini fitur pindai Gmail memerlukan OAuth Client ID dari Google Cloud Console:
 
 1. Aktifkan Gmail API di project Google Cloud
 2. Buat OAuth Client ID tipe Android dengan package `com.careerpath.app`
