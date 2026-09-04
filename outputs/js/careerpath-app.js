@@ -91,7 +91,10 @@ const importConfirmModal = document.getElementById("importConfirmModal");
 const importConfirmText = document.getElementById("importConfirmText");
 const importConfirmCancel = document.getElementById("importConfirmCancel");
 const importConfirmOk = document.getElementById("importConfirmOk");
-const aboutBackButton = document.getElementById("aboutBackButton");
+const darkModeToggle = document.getElementById("darkModeToggle");
+const darkModeCheckbox = document.getElementById("darkModeCheckbox");
+const helpButton = document.getElementById("helpButton");
+const shareButton = document.querySelector("button[aria-label='Share']");
 const gmailScanButton = document.getElementById("gmailScanButton");
 const gmailStatus = document.getElementById("gmailStatus");
 const gmailLogoutButton = document.getElementById("gmailLogoutButton");
@@ -555,7 +558,14 @@ function setAnalyticsSummaryExpanded(isExpanded) {
 }
 
 function renderDashboard() {
-  const jobs = getJobs();
+  const allJobs = getJobs();
+  // Sort from newest (date) to oldest, fallback to object order
+  const jobs = allJobs.sort((a, b) => {
+    const da = new Date(a.date).getTime();
+    const db = new Date(b.date).getTime();
+    return db - da;
+  });
+  
   const counts = getStatusCounts(jobs);
 
   ["recommendation", "applied", "interview", "offer", "rejected"].forEach(status => {
@@ -563,10 +573,15 @@ function renderDashboard() {
     if (stat) stat.textContent = counts[status] || 0;
   });
 
-  activityList.replaceChildren(...(jobs.length ? jobs.map(createActivityCard) : [createEmptyActivity()]));
+  const recentJobs = jobs.slice(0, 10);
+  activityList.replaceChildren(...(recentJobs.length ? recentJobs.map(createActivityCard) : [createEmptyActivity()]));
+  
+  // Re-select cards after creation
   activityCards = Array.from(document.querySelectorAll(".activity-card[data-status]"));
   if (viewAllLink) {
-    viewAllLink.href = `careerpath-jobs.html?jobs=${encodeURIComponent(JSON.stringify(jobs))}`;
+    // Only pass id array to avoid huge URLs
+    const jobIds = jobs.map(j => j.id);
+    viewAllLink.href = `careerpath-jobs.html`;
   }
 
   const activeFilter = document.querySelector(".chip.active")?.dataset.filter || "all";
@@ -921,6 +936,41 @@ calendarToday.addEventListener("click", chooseToday);
 calendarBackdrop.addEventListener("click", event => {
   if (event.target === calendarBackdrop) setCalendarOpen(false);
 });
+// Dark mode logic
+const isDarkMode = readStorage("careerPathDarkMode") === true;
+if (isDarkMode) {
+  document.documentElement.classList.add("dark-mode");
+  if (darkModeCheckbox) darkModeCheckbox.checked = true;
+}
+
+if (darkModeToggle && darkModeCheckbox) {
+  darkModeToggle.addEventListener("click", () => {
+    const isDark = document.documentElement.classList.toggle("dark-mode");
+    darkModeCheckbox.checked = isDark;
+    writeStorage("careerPathDarkMode", isDark);
+  });
+}
+
+if (helpButton) {
+  helpButton.addEventListener("click", () => {
+    alert("Panduan Pengguna:\n1. Tambah lamaran dari menu Tambah.\n2. Untuk scan Gmail otomatis, klik tombol 'Hubungkan dan pindai Gmail'.\n3. Halaman Profile juga bisa digunakan untuk backup & restore data.");
+  });
+}
+
+if (shareButton) {
+  shareButton.addEventListener("click", () => {
+    const job = getJobs().find(item => item.id === selectedJobId);
+    if (!job) return;
+    const meta = statusMeta[job.status] || statusMeta.applied;
+    const text = `Saya melamar sebagai ${job.role} di ${job.company} (Status: ${meta.label})`;
+    if (navigator.share) {
+      navigator.share({ title: 'CareerPath', text: text }).catch(() => {});
+    } else {
+      alert("Bagikan: " + text);
+    }
+  });
+}
+
 document.addEventListener("click", () => {
   setNotificationsOpen(false);
   setStatusPickerOpen(false);

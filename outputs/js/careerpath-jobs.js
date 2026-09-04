@@ -57,13 +57,13 @@ function normalizeJobs(items) {
 
 function getJobs() {
   try {
-    const fromUrl = new URLSearchParams(location.search).get("jobs");
-    if (fromUrl !== null) {
-      const parsed = JSON.parse(fromUrl);
-      return normalizeJobs(parsed);
-    }
     const stored = readStorage(storageKey);
-    return normalizeJobs(stored);
+    const jobs = normalizeJobs(stored);
+    return jobs.sort((a, b) => {
+      const da = new Date(a.date).getTime();
+      const db = new Date(b.date).getTime();
+      return db - da;
+    });
   } catch {}
   return [];
 }
@@ -103,8 +103,21 @@ function createJobEmptyState() {
   return empty;
 }
 
+let activeFilter = "all";
+let searchQuery = "";
+
 function renderList() {
-  jobList.replaceChildren(...(jobs.length ? jobs.map(createJobCard) : [createJobEmptyState()]));
+  const filteredJobs = jobs.filter(job => {
+    const matchesFilter = activeFilter === "all" || job.status === activeFilter;
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch = !searchLower || 
+      (job.company && job.company.toLowerCase().includes(searchLower)) || 
+      (job.role && job.role.toLowerCase().includes(searchLower));
+    return matchesFilter && matchesSearch;
+  });
+
+  jobList.replaceChildren(...(filteredJobs.length ? filteredJobs.map(createJobCard) : [createJobEmptyState()]));
+  
   const counts = jobs.reduce((total, job) => {
     total[job.status] = (total[job.status] || 0) + 1;
     return total;
@@ -120,6 +133,39 @@ function renderList() {
   summary.forEach(([label, value], index) => {
     if (summaryNumbers[index]) summaryNumbers[index].textContent = value;
     if (summaryLabels[index]) summaryLabels[index].textContent = label;
+  });
+}
+
+const searchInput = document.getElementById("searchInput");
+const filterChips = document.querySelectorAll(".filter-chip");
+
+if (searchInput) {
+  searchInput.addEventListener("input", (e) => {
+    searchQuery = e.target.value;
+    renderList();
+  });
+}
+
+if (filterChips.length) {
+  filterChips.forEach(chip => {
+    chip.addEventListener("click", () => {
+      filterChips.forEach(c => {
+        c.classList.remove("active");
+        c.style.background = "white";
+        c.style.color = "#101c2a";
+        c.style.borderColor = "#dcdfe4";
+      });
+      chip.classList.add("active");
+      chip.style.background = "#006f93";
+      chip.style.color = "white";
+      chip.style.borderColor = "#006f93";
+      activeFilter = chip.dataset.filter;
+if (readStorage("careerPathDarkMode") === true) {
+  document.documentElement.classList.add("dark-mode");
+}
+
+renderList();
+    });
   });
 }
 

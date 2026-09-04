@@ -262,7 +262,18 @@
             <span class="material-symbols-outlined chevron">chevron_right</span>
           </button>
           <input type="file" id="importFileInput" accept=".json,application/json" hidden>
-          <button class="profile-menu-item" type="button">
+          <button class="profile-menu-item" type="button" id="darkModeToggle">
+            <span class="profile-menu-icon"><span class="material-symbols-outlined">dark_mode</span></span>
+            <span>
+              <span class="menu-title">Mode Gelap</span>
+              <span class="menu-subtitle">Ubah tampilan menjadi gelap</span>
+            </span>
+            <div class="toggle-switch">
+              <input type="checkbox" id="darkModeCheckbox" tabindex="-1">
+              <span class="slider"></span>
+            </div>
+          </button>
+          <button class="profile-menu-item" type="button" id="helpButton">
             <span class="profile-menu-icon"><span class="material-symbols-outlined">help</span></span>
             <span>
               <span class="menu-title">Bantuan</span>

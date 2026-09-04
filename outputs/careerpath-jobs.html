@@ -23,6 +23,17 @@
     <section data-list-view>
       <h1>Semua Lamaran</h1>
       <p>Daftar lengkap dari seluruh lamaran pekerjaanmu.</p>
+      
+      <div class="search-bar" style="margin-bottom: 16px;">
+        <input type="text" id="searchInput" placeholder="Cari perusahaan atau posisi..." style="width: 100%; padding: 12px; border: 1px solid #dcdfe4; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+      </div>
+      <div class="filter-bar" style="margin-bottom: 24px; display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;">
+        <button class="filter-chip active" data-filter="all" style="padding: 6px 12px; border-radius: 16px; border: 1px solid #006f93; background: #006f93; color: white; white-space: nowrap;">Semua</button>
+        <button class="filter-chip" data-filter="applied" style="padding: 6px 12px; border-radius: 16px; border: 1px solid #dcdfe4; background: white; color: #101c2a; white-space: nowrap;">Lamaran</button>
+        <button class="filter-chip" data-filter="interview" style="padding: 6px 12px; border-radius: 16px; border: 1px solid #dcdfe4; background: white; color: #101c2a; white-space: nowrap;">Interview</button>
+        <button class="filter-chip" data-filter="offer" style="padding: 6px 12px; border-radius: 16px; border: 1px solid #dcdfe4; background: white; color: #101c2a; white-space: nowrap;">Offer</button>
+        <button class="filter-chip" data-filter="rejected" style="padding: 6px 12px; border-radius: 16px; border: 1px solid #dcdfe4; background: white; color: #101c2a; white-space: nowrap;">Ditolak</button>
+      </div>
     </section>
 
     <section class="summary" aria-label="Job summary" data-list-view>
