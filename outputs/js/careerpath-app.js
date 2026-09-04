@@ -96,6 +96,43 @@ const calendarToday = document.getElementById("calendarToday");
 const calendarTriggers = Array.from(document.querySelectorAll(".calendar-trigger"));
 const storageKey = "careerPathJobs";
 const userStorageKey = "careerPathUser";
+const storageVersion = "v2";
+
+function obfuscate(text) {
+  const key = storageVersion;
+  return btoa(Array.from(text).map((c, i) =>
+    String.fromCharCode(c.charCodeAt(0) ^ key.charCodeAt(i % key.length))
+  ).join(""));
+}
+
+function deobfuscate(encoded) {
+  const key = storageVersion;
+  const decoded = atob(encoded);
+  return Array.from(decoded).map((c, i) =>
+    String.fromCharCode(c.charCodeAt(0) ^ key.charCodeAt(i % key.length))
+  ).join("");
+}
+
+function readStorage(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    try {
+      const plain = JSON.parse(raw);
+      if (plain !== null && typeof plain === "object") {
+        localStorage.setItem(key, obfuscate(raw));
+        return plain;
+      }
+    } catch {}
+    return JSON.parse(deobfuscate(raw));
+  } catch {
+    return null;
+  }
+}
+
+function writeStorage(key, value) {
+  localStorage.setItem(key, obfuscate(JSON.stringify(value)));
+}
 let selectedJobId = null;
 let editingJobId = null;
 let calendarTargetInput = null;
@@ -141,7 +178,7 @@ function normalizeJobs(jobs) {
 
 function getJobs() {
   try {
-    const stored = JSON.parse(localStorage.getItem(storageKey) || "null");
+    const stored = readStorage(storageKey);
     const jobs = normalizeJobs(stored);
     if (Array.isArray(stored) && jobs.length !== stored.length) saveJobs(jobs);
     return jobs;
@@ -151,12 +188,12 @@ function getJobs() {
 }
 
 function saveJobs(jobs) {
-  localStorage.setItem(storageKey, JSON.stringify(jobs));
+  writeStorage(storageKey, jobs);
 }
 
 function getUserProfile() {
   try {
-    const stored = JSON.parse(localStorage.getItem(userStorageKey) || "{}");
+    const stored = readStorage(userStorageKey);
     return stored && typeof stored === "object" ? stored : {};
   } catch {
     return {};
@@ -164,7 +201,7 @@ function getUserProfile() {
 }
 
 function saveUserProfile(profile) {
-  localStorage.setItem(userStorageKey, JSON.stringify(profile));
+  writeStorage(userStorageKey, profile);
 }
 
 

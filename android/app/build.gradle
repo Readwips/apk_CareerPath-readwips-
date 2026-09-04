@@ -26,6 +26,14 @@ android {
         versionName "1.1"
     }
 
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
     sourceSets.main.assets.srcDir(webAssetsDir)
 }
 

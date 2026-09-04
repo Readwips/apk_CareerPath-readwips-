@@ -1,4 +1,26 @@
 const storageKey = "careerPathJobs";
+const storageVersion = "v2";
+
+function deobfuscate(encoded) {
+  const key = storageVersion;
+  const decoded = atob(encoded);
+  return Array.from(decoded).map((c, i) =>
+    String.fromCharCode(c.charCodeAt(0) ^ key.charCodeAt(i % key.length))
+  ).join("");
+}
+
+function readStorage(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch {}
+    return JSON.parse(deobfuscate(raw));
+  } catch {
+    return null;
+  }
+}
 const statusMeta = {
   recommendation: { label: "Rekomendasi lowongan", badgeClass: "applied" },
   applied: { label: "Lamaran diterima", badgeClass: "applied" },
@@ -40,7 +62,7 @@ function getJobs() {
       const parsed = JSON.parse(fromUrl);
       return normalizeJobs(parsed);
     }
-    const stored = JSON.parse(localStorage.getItem(storageKey) || "null");
+    const stored = readStorage(storageKey);
     return normalizeJobs(stored);
   } catch {}
   return [];

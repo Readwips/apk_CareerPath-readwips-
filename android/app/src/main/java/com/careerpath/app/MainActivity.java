@@ -55,6 +55,7 @@ public class MainActivity extends Activity {
     private static final int SIGN_IN_REQUEST = 1001;
     private static final String GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
     private static final String LOCAL_ASSET_PREFIX = "file:///android_asset/";
+    private static final int MAX_GMAIL_PAGES = 3;
     private final ExecutorService executor = Executors.newFixedThreadPool(6);
     private WebView webView;
     private GoogleSignInClient signInClient;
@@ -76,8 +77,10 @@ public class MainActivity extends Activity {
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
-        settings.setAllowFileAccess(true);
+        settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
+        settings.setAllowFileAccessFromFileURLs(false);
+        settings.setAllowUniversalAccessFromFileURLs(false);
         settings.setBlockNetworkLoads(true);
         settings.setSupportMultipleWindows(true);
         settings.setJavaScriptCanOpenWindowsAutomatically(true);
@@ -171,6 +174,12 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void exportData(String jsonString) {
+            if (jsonString == null || jsonString.length() > 5 * 1024 * 1024) return;
+            try {
+                new JSONArray(jsonString);
+            } catch (Exception e) {
+                return;
+            }
             runOnUiThread(() -> {
                 try {
                     String fileName = "careerpath-backup-" + new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(new Date()) + ".json";
@@ -234,6 +243,7 @@ public class MainActivity extends Activity {
         String baseUrl = "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=100&q=" + Uri.encode(query);
         List<JSONObject> parsedJobs = Collections.synchronizedList(new ArrayList<>());
         String pageToken = null;
+        int pageCount = 0;
         do {
             String url = pageToken != null ? baseUrl + "&pageToken=" + pageToken : baseUrl;
             JSONObject list = requestJson(url, token);
@@ -256,7 +266,8 @@ public class MainActivity extends Activity {
                 latch.await();
             }
             pageToken = list.optString("nextPageToken", null);
-        } while (pageToken != null);
+            pageCount++;
+        } while (pageToken != null && pageCount < MAX_GMAIL_PAGES);
         
         JSONArray jobs = new JSONArray();
         for (JSONObject job : parsedJobs) jobs.put(job);
