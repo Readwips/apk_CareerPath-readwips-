@@ -253,6 +253,15 @@
             </span>
             <span class="material-symbols-outlined chevron">chevron_right</span>
           </button>
+          <button class="profile-menu-item" type="button" id="importDataButton">
+            <span class="profile-menu-icon"><span class="material-symbols-outlined">description</span></span>
+            <span>
+              <span class="menu-title">Restore Data</span>
+              <span class="menu-subtitle">Impor data lamaran dari file backup JSON</span>
+            </span>
+            <span class="material-symbols-outlined chevron">chevron_right</span>
+          </button>
+          <input type="file" id="importFileInput" accept=".json,application/json" hidden>
           <button class="profile-menu-item" type="button">
             <span class="profile-menu-icon"><span class="material-symbols-outlined">help</span></span>
             <span>
@@ -377,6 +386,26 @@
           </button>
         </div>
       </section>
+    </div>
+    <div class="profile-modal-backdrop" id="deleteConfirmModal" hidden role="dialog" aria-modal="true" aria-labelledby="deleteConfirmTitle">
+      <div class="profile-modal">
+        <h3 id="deleteConfirmTitle">Hapus lamaran?</h3>
+        <p style="color:#7e8891;margin:8px 0 16px;">Data lamaran ini akan dihapus permanen dan tidak bisa dikembalikan.</p>
+        <div class="profile-modal-actions">
+          <button class="profile-modal-cancel" id="deleteConfirmCancel" type="button">Batal</button>
+          <button class="profile-modal-save" id="deleteConfirmOk" type="button" style="background:#d83a45;">Hapus</button>
+        </div>
+      </div>
+    </div>
+    <div class="profile-modal-backdrop" id="importConfirmModal" hidden role="dialog" aria-modal="true" aria-labelledby="importConfirmTitle">
+      <div class="profile-modal">
+        <h3 id="importConfirmTitle">Restore data?</h3>
+        <p id="importConfirmText" style="color:#7e8891;margin:8px 0 16px;"></p>
+        <div class="profile-modal-actions">
+          <button class="profile-modal-cancel" id="importConfirmCancel" type="button">Batal</button>
+          <button class="profile-modal-save" id="importConfirmOk" type="button">Restore</button>
+        </div>
+      </div>
     </div>
     <div class="calendar-backdrop" id="calendarBackdrop" hidden>
       <section class="calendar-card" role="dialog" aria-modal="true" aria-labelledby="calendarTitle">

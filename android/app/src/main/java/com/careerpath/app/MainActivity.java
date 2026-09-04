@@ -14,16 +14,20 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.webkit.DownloadListener;
 import android.app.DownloadManager;
 import android.content.ContentValues;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.google.android.gms.auth.GoogleAuthUtil;
+import com.google.android.gms.auth.UserRecoverableAuthException;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -51,14 +55,33 @@ import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
 
-public class MainActivity extends Activity {
-    private static final int SIGN_IN_REQUEST = 1001;
+public class MainActivity extends AppCompatActivity {
     private static final String GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
     private static final String LOCAL_ASSET_PREFIX = "file:///android_asset/";
     private static final int MAX_GMAIL_PAGES = 3;
     private final ExecutorService executor = Executors.newFixedThreadPool(6);
     private WebView webView;
     private GoogleSignInClient signInClient;
+
+    private final ActivityResultLauncher<Intent> signInLauncher =
+        registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+            try {
+                GoogleSignInAccount account = GoogleSignIn.getSignedInAccountFromIntent(result.getData()).getResult(ApiException.class);
+                scanInbox(account);
+            } catch (ApiException error) {
+                sendError("Login Google dibatalkan atau gagal (" + error.getStatusCode() + ").");
+            }
+        });
+
+    private final ActivityResultLauncher<Intent> authRecoveryLauncher =
+        registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+            if (result.getResultCode() == RESULT_OK) {
+                GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
+                if (account != null) scanInbox(account);
+            } else {
+                sendError("Otorisasi Gmail dibatalkan.");
+            }
+        });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -124,7 +147,6 @@ public class MainActivity extends Activity {
                 request.addRequestHeader("User-Agent", userAgent);
                 request.setDescription("Mengunduh file backup...");
                 request.setTitle("careerpath-backup.json");
-                request.allowScanningByMediaScanner();
                 request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
                 request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "careerpath-backup-" + System.currentTimeMillis() + ".json");
                 DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
@@ -132,6 +154,14 @@ public class MainActivity extends Activity {
                 Toast.makeText(getApplicationContext(), "Mengunduh backup...", Toast.LENGTH_SHORT).show();
             } catch (Exception e) {
                 Toast.makeText(getApplicationContext(), "Gagal mengunduh: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (webView.canGoBack()) webView.goBack();
+                else finish();
             }
         });
 
@@ -151,7 +181,7 @@ public class MainActivity extends Activity {
             runOnUiThread(() -> {
                 GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(MainActivity.this);
                 if (account == null || !GoogleSignIn.hasPermissions(account, new Scope(GMAIL_SCOPE))) {
-                    startActivityForResult(signInClient.getSignInIntent(), SIGN_IN_REQUEST);
+                    signInLauncher.launch(signInClient.getSignInIntent());
                 } else {
                     scanInbox(account);
                 }
@@ -208,17 +238,6 @@ public class MainActivity extends Activity {
         }
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode != SIGN_IN_REQUEST) return;
-        try {
-            scanInbox(GoogleSignIn.getSignedInAccountFromIntent(data).getResult(ApiException.class));
-        } catch (ApiException error) {
-            sendError("Login Google dibatalkan atau gagal (" + error.getStatusCode() + ").");
-        }
-    }
-
     private void scanInbox(GoogleSignInAccount signedInAccount) {
         sendLoading();
         executor.execute(() -> {
@@ -232,6 +251,8 @@ public class MainActivity extends Activity {
                 result.put("email", signedInAccount.getEmail());
                 result.put("jobs", jobs);
                 sendResult(result);
+            } catch (UserRecoverableAuthException recoverable) {
+                runOnUiThread(() -> authRecoveryLauncher.launch(recoverable.getIntent()));
             } catch (Exception error) {
                 sendError(error.getMessage() == null ? "Gagal membaca Gmail." : error.getMessage());
             }
@@ -380,11 +401,5 @@ public class MainActivity extends Activity {
         executor.shutdownNow();
         webView.destroy();
         super.onDestroy();
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (webView.canGoBack()) webView.goBack();
-        else super.onBackPressed();
     }
 }

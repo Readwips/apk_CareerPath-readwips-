@@ -82,6 +82,15 @@ const profileNameInput = document.getElementById("profileNameInput");
 const profileNameCancel = document.getElementById("profileNameCancel");
 const aboutAppMenu = document.getElementById("aboutAppMenu");
 const exportDataButton = document.getElementById("exportDataButton");
+const importDataButton = document.getElementById("importDataButton");
+const importFileInput = document.getElementById("importFileInput");
+const deleteConfirmModal = document.getElementById("deleteConfirmModal");
+const deleteConfirmCancel = document.getElementById("deleteConfirmCancel");
+const deleteConfirmOk = document.getElementById("deleteConfirmOk");
+const importConfirmModal = document.getElementById("importConfirmModal");
+const importConfirmText = document.getElementById("importConfirmText");
+const importConfirmCancel = document.getElementById("importConfirmCancel");
+const importConfirmOk = document.getElementById("importConfirmOk");
 const aboutBackButton = document.getElementById("aboutBackButton");
 const gmailScanButton = document.getElementById("gmailScanButton");
 const gmailStatus = document.getElementById("gmailStatus");
@@ -721,10 +730,55 @@ function saveSelectedJobNote() {
 
 function deleteSelectedJob() {
   if (!selectedJobId) return;
+  deleteConfirmModal.hidden = false;
+}
+
+function confirmDeleteJob() {
+  if (!selectedJobId) return;
   const nextJobs = getJobs().filter(job => job.id !== selectedJobId);
   saveJobs(nextJobs);
   selectedJobId = nextJobs[0]?.id || null;
   editingJobId = null;
+  deleteConfirmModal.hidden = true;
+  renderDashboard();
+  filterActivities("all");
+  showScreen("dashboard", "home");
+}
+
+let pendingImportJobs = null;
+
+function importData() {
+  importFileInput.click();
+}
+
+function handleImportFile(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      const valid = normalizeJobs(parsed);
+      if (!valid.length) {
+        alert("File tidak berisi data lamaran yang valid.");
+        return;
+      }
+      pendingImportJobs = valid;
+      importConfirmText.textContent = `File "${file.name}" berisi ${valid.length} lamaran. Data saat ini (${getJobs().length} lamaran) akan diganti.`;
+      importConfirmModal.hidden = false;
+    } catch {
+      alert("File JSON tidak valid.");
+    }
+    importFileInput.value = "";
+  };
+  reader.readAsText(file);
+}
+
+function confirmImport() {
+  if (!pendingImportJobs) return;
+  saveJobs(pendingImportJobs);
+  pendingImportJobs = null;
+  importConfirmModal.hidden = true;
   renderDashboard();
   filterActivities("all");
   showScreen("dashboard", "home");
@@ -842,6 +896,14 @@ profileNameModal.addEventListener("click", event => {
   if (event.target === profileNameModal) setProfileNameModalOpen(false);
 });
 exportDataButton.addEventListener("click", exportData);
+importDataButton.addEventListener("click", importData);
+importFileInput.addEventListener("change", handleImportFile);
+deleteConfirmCancel.addEventListener("click", () => { deleteConfirmModal.hidden = true; });
+deleteConfirmOk.addEventListener("click", confirmDeleteJob);
+deleteConfirmModal.addEventListener("click", event => { if (event.target === deleteConfirmModal) deleteConfirmModal.hidden = true; });
+importConfirmCancel.addEventListener("click", () => { importConfirmModal.hidden = true; pendingImportJobs = null; });
+importConfirmOk.addEventListener("click", confirmImport);
+importConfirmModal.addEventListener("click", event => { if (event.target === importConfirmModal) { importConfirmModal.hidden = true; pendingImportJobs = null; } });
 aboutAppMenu.addEventListener("click", () => showScreen("about", "profile"));
 aboutBackButton.addEventListener("click", () => showScreen("profile", "profile"));
 gmailScanButton.addEventListener("click", scanGmail);
@@ -869,6 +931,9 @@ document.addEventListener("keydown", event => {
     setStatusPickerOpen(false);
     setProfileNameModalOpen(false);
     setCalendarOpen(false);
+    deleteConfirmModal.hidden = true;
+    importConfirmModal.hidden = true;
+    pendingImportJobs = null;
   }
 });
 setStatusValue("applied");
