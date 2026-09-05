@@ -160,8 +160,7 @@ public class MainActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                if (webView.canGoBack()) webView.goBack();
-                else finish();
+                webView.evaluateJavascript("if(window.handleAndroidBack) { window.handleAndroidBack(); } else { window.CareerPathNative.goBack(); }", null);
             }
         });
 
@@ -222,7 +221,17 @@ public class MainActivity extends AppCompatActivity {
                         if (uri != null) {
                             try (OutputStream out = getContentResolver().openOutputStream(uri)) {
                                 if (out != null) out.write(jsonString.getBytes(StandardCharsets.UTF_8));
-                            }
+        @JavascriptInterface
+        public void goBack() {
+            runOnUiThread(() -> {
+                if (webView.canGoBack()) {
+                    webView.goBack();
+                } else {
+                    finish();
+                }
+            });
+        }
+    }
                         }
                     } else {
                         java.io.File file = new java.io.File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName);
@@ -233,6 +242,17 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(getApplicationContext(), "Backup tersimpan di folder Download", Toast.LENGTH_SHORT).show();
                 } catch (Exception e) {
                     Toast.makeText(getApplicationContext(), "Gagal menyimpan backup", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void goBack() {
+            runOnUiThread(() -> {
+                if (webView.canGoBack()) {
+                    webView.goBack();
+                } else {
+                    finish();
                 }
             });
         }

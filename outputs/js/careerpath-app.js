@@ -838,7 +838,7 @@ function setNotificationsOpen(isOpen) {
   if (isOpen) setStatusPickerOpen(false);
 }
 
-function showScreen(id, navKey = navKeyFor(id), pushHistory = true) {
+function showScreen(id, navKey = navKeyFor(id)) {
   if (id === "dashboard") renderDashboard();
   if (id === "analytics") {
     renderAnalytics();
@@ -853,29 +853,34 @@ function showScreen(id, navKey = navKeyFor(id), pushHistory = true) {
   setProfileNameModalOpen(false);
   setCalendarOpen(false);
   window.scrollTo({ top: 0, behavior: "smooth" });
-  
-  if (pushHistory) {
-    history.pushState({ screenId: id, navKey: navKey }, "", `#${id}`);
-  }
 }
 
-window.addEventListener("popstate", (event) => {
-  // If any modal/backdrop is open, close them first instead of navigating back
-  if (!deleteConfirmModal.hidden) { deleteConfirmModal.hidden = true; history.pushState(event.state, "", location.hash); return; }
-  if (!importConfirmModal.hidden) { importConfirmModal.hidden = true; history.pushState(event.state, "", location.hash); return; }
-  if (!statusBackdrop.hidden) { setStatusPickerOpen(false); history.pushState(event.state, "", location.hash); return; }
-  if (!calendarBackdrop.hidden) { setCalendarOpen(false); history.pushState(event.state, "", location.hash); return; }
-  if (!notificationPopover.hidden) { setNotificationsOpen(false); history.pushState(event.state, "", location.hash); return; }
-  if (!profileNameModal.hidden) { setProfileNameModalOpen(false); history.pushState(event.state, "", location.hash); return; }
+window.handleAndroidBack = function() {
+  if (!deleteConfirmModal.hidden) { deleteConfirmModal.hidden = true; return true; }
+  if (!importConfirmModal.hidden) { importConfirmModal.hidden = true; return true; }
+  if (!statusBackdrop.hidden) { setStatusPickerOpen(false); return true; }
+  if (!calendarBackdrop.hidden) { setCalendarOpen(false); return true; }
+  if (!notificationPopover.hidden) { setNotificationsOpen(false); return true; }
+  if (!profileNameModal.hidden) { setProfileNameModalOpen(false); return true; }
 
-  const state = event.state;
-  if (state && state.screenId) {
-    showScreen(state.screenId, state.navKey, false);
-  } else {
-    // Default fallback to dashboard if no state
-    showScreen("dashboard", "home", false);
+  const currentActive = screens.find(screen => screen.classList.contains("active"))?.id;
+  if (currentActive !== "dashboard") {
+    // If we're inside the detail view but triggered from dashboard, go back to dashboard
+    // or if we are in about page, go back to profile
+    if (currentActive === "about") {
+      showScreen("profile", "profile");
+    } else {
+      showScreen("dashboard", "home");
+    }
+    return true; // We handled it
   }
-});
+
+  // If we are at dashboard and no modals open, tell Android to exit
+  if (window.CareerPathNative && window.CareerPathNative.goBack) {
+    window.CareerPathNative.goBack();
+  }
+  return false;
+};
 
 navItems.forEach(item => item.addEventListener("click", () => {
   if (item.dataset.target === "add") openAddForm();
@@ -1013,7 +1018,4 @@ document.addEventListener("keydown", event => {
 setStatusValue("applied");
 renderDashboard();
 renderProfile();
-
-// Initial history state
-history.replaceState({ screenId: "dashboard", navKey: "home" }, "", "#dashboard");
-showScreen("dashboard", "home", false);
+showScreen("dashboard", "home");

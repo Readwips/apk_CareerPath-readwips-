@@ -164,26 +164,22 @@ if (readStorage("careerPathDarkMode") === true) {
   document.documentElement.classList.add("dark-mode");
 }
 
-history.replaceState({ view: "list" }, "", "#list");
 renderList();
     });
   });
 }
 
-function showList(pushHistory = true) {
+function showList() {
   document.body.classList.remove("detail-mode");
   backBtn.textContent = "Kembali";
   window.scrollTo({ top: 0, behavior: "smooth" });
-  if (pushHistory) {
-    history.pushState({ view: "list" }, "", "#list");
-  }
 }
 
 // Detail view
-function showDetail(id, pushHistory = true) {
+function showDetail(id) {
   const job = jobs.find(item => item.id === id);
   if (!job) {
-    showList(pushHistory);
+    showList();
     return;
   }
   const meta = statusMeta[job.status] || statusMeta.applied;
@@ -202,19 +198,19 @@ function showDetail(id, pushHistory = true) {
   document.body.classList.add("detail-mode");
   backBtn.textContent = "Kembali";
   window.scrollTo({ top: 0, behavior: "smooth" });
-  if (pushHistory) {
-    history.pushState({ view: "detail", jobId: id }, "", `#detail-${id}`);
-  }
 }
 
-window.addEventListener("popstate", (event) => {
-  const state = event.state;
-  if (state && state.view === "detail") {
-    showDetail(state.jobId, false);
-  } else {
-    showList(false);
+window.handleAndroidBack = function() {
+  if (document.body.classList.contains("detail-mode")) {
+    showList();
+    return true; // We handled it
   }
-});
+  // If we are at list view, exit to app
+  if (window.CareerPathNative && window.CareerPathNative.goBack) {
+    window.CareerPathNative.goBack();
+  }
+  return false;
+};
 
 // Navigation
 function leaveTab() {
