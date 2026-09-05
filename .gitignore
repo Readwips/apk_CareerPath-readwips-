@@ -1,6 +1,8 @@
 work/
 .agents/
 .codex/
+node_modules/
+package-lock.json
 
 # Local editor and machine files
 .idea/

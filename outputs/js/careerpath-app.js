@@ -14,6 +14,7 @@ const iconPaths = {
   chevron_left: '<path d="M15 18l-6-6 6-6"/>',
   chevron_right: '<path d="M9 18l6-6-6-6"/>',
   dashboard: '<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/>',
+  dark_mode: '<path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>',
   delete: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3"/>',
   description: '<path d="M6 3h9l3 3v15H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
   edit: '<path d="M4 20h4l11-11-4-4L4 16z"/><path d="M14 6l4 4"/>',
@@ -81,6 +82,7 @@ const profileNameForm = document.getElementById("profileNameForm");
 const profileNameInput = document.getElementById("profileNameInput");
 const profileNameCancel = document.getElementById("profileNameCancel");
 const aboutAppMenu = document.getElementById("aboutAppMenu");
+const aboutBackButton = document.getElementById("aboutBackButton");
 const exportDataButton = document.getElementById("exportDataButton");
 const importDataButton = document.getElementById("importDataButton");
 const importFileInput = document.getElementById("importFileInput");
@@ -380,7 +382,7 @@ function parseDateValue(value) {
 }
 
 function formatDateValue(date) {
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString("id-ID", {
     month: "2-digit",
     day: "2-digit",
     year: "numeric"
@@ -403,7 +405,7 @@ function renderCalendar() {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  calendarTitle.textContent = calendarViewDate.toLocaleDateString("en-US", {
+  calendarTitle.textContent = calendarViewDate.toLocaleDateString("id-ID", {
     month: "long",
     year: "numeric"
   });
@@ -419,7 +421,7 @@ function renderCalendar() {
     button.type = "button";
     button.classList.toggle("is-today", isSameDate(date, today));
     button.classList.toggle("is-selected", isSameDate(date, selectedDate));
-    button.setAttribute("aria-label", date.toLocaleDateString("en-US", {
+    button.setAttribute("aria-label", date.toLocaleDateString("id-ID", {
       weekday: "long",
       month: "long",
       day: "numeric",
@@ -676,7 +678,7 @@ function buildJobFromForm() {
   const company = document.getElementById("companyNameInput").value.trim();
   const role = document.getElementById("jobRoleInput").value.trim();
   const status = document.getElementById("statusInput").value;
-  const date = document.getElementById("applicationDateInput").value.trim() || new Date().toLocaleDateString("en-US");
+    const date = document.getElementById("applicationDateInput").value.trim() || new Date().toLocaleDateString("id-ID");
   const interviewDate = interviewDateInput.value.trim();
   const notes = document.getElementById("notesInput").value.trim();
   const existing = editingJobId ? getJobs().find(job => job.id === editingJobId) : null;
@@ -711,7 +713,7 @@ function setFormMode(mode) {
 function fillForm(job) {
   document.getElementById("companyNameInput").value = job.company || "";
   document.getElementById("jobRoleInput").value = job.role || "";
-  document.getElementById("applicationDateInput").value = job.date || new Date().toLocaleDateString("en-US");
+  document.getElementById("applicationDateInput").value = job.date || new Date().toLocaleDateString("id-ID");
   interviewDateInput.value = job.interviewDate || "";
   document.getElementById("notesInput").value = job.description === "Belum ada catatan." ? "" : (job.description || "");
   setStatusValue(job.status || "applied");
@@ -721,7 +723,7 @@ function openAddForm() {
   editingJobId = null;
   setFormMode("add");
   addJobForm.reset();
-  document.getElementById("applicationDateInput").value = new Date().toLocaleDateString("en-US");
+  document.getElementById("applicationDateInput").value = new Date().toLocaleDateString("id-ID");
   setStatusValue("applied");
   showScreen("add", "add");
 }
@@ -891,7 +893,7 @@ addJobForm.addEventListener("submit", event => {
   editingJobId = null;
   setFormMode("add");
   addJobForm.reset();
-  document.getElementById("applicationDateInput").value = new Date().toLocaleDateString("en-US");
+  document.getElementById("applicationDateInput").value = new Date().toLocaleDateString("id-ID");
   setStatusValue("applied");
   showJobDetail(savedJob.id);
 });

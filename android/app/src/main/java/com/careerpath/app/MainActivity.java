@@ -212,7 +212,7 @@ public class MainActivity extends AppCompatActivity {
             }
             runOnUiThread(() -> {
                 try {
-                    String fileName = "careerpath-backup-" + new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(new Date()) + ".json";
+                    String fileName = "careerpath-backup-" + new SimpleDateFormat("yyyyMMdd-HHmmss", new Locale("id", "ID")).format(new Date()) + ".json";
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         ContentValues values = new ContentValues();
                         values.put(MediaStore.Downloads.DISPLAY_NAME, fileName);
@@ -329,7 +329,7 @@ public class MainActivity extends AppCompatActivity {
         job.put("company", company);
         job.put("role", role);
         job.put("status", status);
-        job.put("date", new SimpleDateFormat("MM/dd/yyyy", Locale.US).format(new Date(timestamp)));
+        job.put("date", new SimpleDateFormat("dd/MM/yyyy", new Locale("id", "ID")).format(new Date(timestamp)));
         job.put("description", message.optString("snippet"));
         return job;
     }
