@@ -838,7 +838,7 @@ function setNotificationsOpen(isOpen) {
   if (isOpen) setStatusPickerOpen(false);
 }
 
-function showScreen(id, navKey = navKeyFor(id)) {
+function showScreen(id, navKey = navKeyFor(id), pushHistory = true) {
   if (id === "dashboard") renderDashboard();
   if (id === "analytics") {
     renderAnalytics();
@@ -853,7 +853,29 @@ function showScreen(id, navKey = navKeyFor(id)) {
   setProfileNameModalOpen(false);
   setCalendarOpen(false);
   window.scrollTo({ top: 0, behavior: "smooth" });
+  
+  if (pushHistory) {
+    history.pushState({ screenId: id, navKey: navKey }, "", `#${id}`);
+  }
 }
+
+window.addEventListener("popstate", (event) => {
+  // If any modal/backdrop is open, close them first instead of navigating back
+  if (!deleteConfirmModal.hidden) { deleteConfirmModal.hidden = true; history.pushState(event.state, "", location.hash); return; }
+  if (!importConfirmModal.hidden) { importConfirmModal.hidden = true; history.pushState(event.state, "", location.hash); return; }
+  if (!statusBackdrop.hidden) { setStatusPickerOpen(false); history.pushState(event.state, "", location.hash); return; }
+  if (!calendarBackdrop.hidden) { setCalendarOpen(false); history.pushState(event.state, "", location.hash); return; }
+  if (!notificationPopover.hidden) { setNotificationsOpen(false); history.pushState(event.state, "", location.hash); return; }
+  if (!profileNameModal.hidden) { setProfileNameModalOpen(false); history.pushState(event.state, "", location.hash); return; }
+
+  const state = event.state;
+  if (state && state.screenId) {
+    showScreen(state.screenId, state.navKey, false);
+  } else {
+    // Default fallback to dashboard if no state
+    showScreen("dashboard", "home", false);
+  }
+});
 
 navItems.forEach(item => item.addEventListener("click", () => {
   if (item.dataset.target === "add") openAddForm();
@@ -991,4 +1013,7 @@ document.addEventListener("keydown", event => {
 setStatusValue("applied");
 renderDashboard();
 renderProfile();
-showScreen("dashboard");
+
+// Initial history state
+history.replaceState({ screenId: "dashboard", navKey: "home" }, "", "#dashboard");
+showScreen("dashboard", "home", false);

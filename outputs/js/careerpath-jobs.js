@@ -164,22 +164,26 @@ if (readStorage("careerPathDarkMode") === true) {
   document.documentElement.classList.add("dark-mode");
 }
 
+history.replaceState({ view: "list" }, "", "#list");
 renderList();
     });
   });
 }
 
-function showList() {
+function showList(pushHistory = true) {
   document.body.classList.remove("detail-mode");
   backBtn.textContent = "Kembali";
   window.scrollTo({ top: 0, behavior: "smooth" });
+  if (pushHistory) {
+    history.pushState({ view: "list" }, "", "#list");
+  }
 }
 
 // Detail view
-function showDetail(id) {
+function showDetail(id, pushHistory = true) {
   const job = jobs.find(item => item.id === id);
   if (!job) {
-    showList();
+    showList(pushHistory);
     return;
   }
   const meta = statusMeta[job.status] || statusMeta.applied;
@@ -198,7 +202,19 @@ function showDetail(id) {
   document.body.classList.add("detail-mode");
   backBtn.textContent = "Kembali";
   window.scrollTo({ top: 0, behavior: "smooth" });
+  if (pushHistory) {
+    history.pushState({ view: "detail", jobId: id }, "", `#detail-${id}`);
+  }
 }
+
+window.addEventListener("popstate", (event) => {
+  const state = event.state;
+  if (state && state.view === "detail") {
+    showDetail(state.jobId, false);
+  } else {
+    showList(false);
+  }
+});
 
 // Navigation
 function leaveTab() {
